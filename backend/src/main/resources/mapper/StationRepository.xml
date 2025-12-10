@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.wtd.backend.repository.StationRepository">
+
+    <select id="findById" parameterType="java.lang.String" resultType="com.ssafy.wtd.backend.model.Station">
+        SELECT station_id AS stationId, station_name AS stationName, address, lat, lng, city, district
+        FROM charging_station
+        WHERE station_id = #{stationId}
+    </select>
+
+</mapper>
