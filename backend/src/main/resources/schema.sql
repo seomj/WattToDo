@@ -1,5 +1,5 @@
 -- 1. 데이터베이스가 이미 존재한다면 삭제 (개발/테스트 환경에서 사용 권장)
--- DROP DATABASE IF EXISTS wtd_db;
+DROP DATABASE IF EXISTS wtd_db;
 
 -- 2. 데이터베이스 생성
 CREATE DATABASE IF NOT EXISTS wtd_db
@@ -81,7 +81,7 @@ CREATE TABLE charger_port (
 CREATE TABLE charge_record (
     record_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    charger_id VARCHAR(20) NOT NULL, 
+    station_id VARCHAR(20) NOT NULL,
     
     charged_kwh FLOAT,
     start_kwh FLOAT,
@@ -96,7 +96,7 @@ CREATE TABLE charge_record (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (user_id) REFERENCES user(user_id),
-    FOREIGN KEY (charger_id) REFERENCES charger(charger_id)
+    FOREIGN KEY (station_id) REFERENCES charging_station(station_id)
 ) COMMENT '사용자의 충전 활동 기록';
 
 -- 2.7. 탄소 절감 기록 테이블
