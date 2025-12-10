@@ -77,26 +77,39 @@ CREATE TABLE charger_port (
     FOREIGN KEY (charger_id) REFERENCES charger(charger_id)
 ) COMMENT '충전기의 개별 포트(커넥터) 상세 정보';
 
--- 2.6. 충전 기록 테이블
+-- 2.6. 충전 기록 테이블 (Charge Record)
+-- 역할: 사용자의 충전 활동 및 관련 통계 데이터를 기록
 CREATE TABLE charge_record (
-    record_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    station_id VARCHAR(20) NOT NULL,
-    
-    charged_kwh FLOAT,
-    start_kwh FLOAT,
-    target_kwh FLOAT,
-    duration_min INT,
-    
-    start_time DATETIME NOT NULL,
-    end_time DATETIME,
-    
-    charging_cost INT,
-    
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
+    -- 기본 정보
+    record_id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '기록 고유 ID',
+    user_id BIGINT NOT NULL COMMENT '사용자 ID (FK)',
+    station_id VARCHAR(20) NOT NULL COMMENT '충전소 ID (FK)',
+
+    -- 충전 상태 관리 (필수)
+    status VARCHAR(10) NOT NULL DEFAULT 'CHARGING' COMMENT '충전 상태: CHARGING (진행 중) 또는 COMPLETED (완료)',
+
+    -- 충전량 및 목표
+    start_kwh FLOAT COMMENT '충전 시작 시점의 차량 배터리 잔여량 (kWh)',
+    target_kwh FLOAT COMMENT '사용자가 설정한 목표 충전량 (kWh)',
+    charged_kwh FLOAT COMMENT '실제 충전된 양 (kWh)',
+
+    -- 시간 및 비용
+    start_time DATETIME NOT NULL COMMENT '충전 시작 시간',
+    end_time DATETIME COMMENT '충전 종료 시간',
+    duration_min INT COMMENT '총 충전 지속 시간 (분)',
+    charging_cost INT COMMENT '최종 충전 비용',
+
+    -- 시스템 메타 데이터
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '기록 생성 시점',
+
+    -- 외래 키 정의
     FOREIGN KEY (user_id) REFERENCES user(user_id),
-    FOREIGN KEY (station_id) REFERENCES charging_station(station_id)
+    FOREIGN KEY (station_id) REFERENCES charging_station(station_id),
+
+    -- 인덱스 추가 (조회 및 검색 성능 향상)
+    INDEX idx_user_id (user_id),
+    INDEX idx_station_id (station_id),
+    INDEX idx_status (status) -- 상태별 조회(CHARGING 중인 기록 찾기)를 위해 필수
 ) COMMENT '사용자의 충전 활동 기록';
 
 -- 2.7. 탄소 절감 기록 테이블
