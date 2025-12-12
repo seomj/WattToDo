@@ -152,6 +152,21 @@ CREATE TABLE carbon_config (
     FOREIGN KEY (updated_by) REFERENCES user(user_id)
 ) COMMENT '탄소 절감량 계산에 사용되는 기준값';
 
+-- 2.10.  Refresh Token 저장 테이블
+CREATE TABLE IF NOT EXISTS refresh_token (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,     -- Refresh Token 고유 ID
+
+    user_id BIGINT NOT NULL,                  -- 사용자 ID (FK)
+    token VARCHAR(255) NOT NULL,              -- Refresh Token 값
+    expires_at DATETIME NOT NULL,             -- 만료 시각
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 생성 시각
+
+    CONSTRAINT fk_refresh_token_user
+        FOREIGN KEY (user_id)
+        REFERENCES user(user_id)
+        ON DELETE CASCADE                      -- 사용자 삭제 시 토큰도 삭제
+);
+
 -- 3.1. 기본 관리자 계정 삽입 (carbon_config의 updated_by를 위한 선행 작업)
 INSERT INTO user (
     user_id, email, password, name, nickname, role, status, created_at, updated_at
