@@ -1,13 +1,13 @@
 package com.ssafy.wtd.backend.service.analysis;
 
+import com.ssafy.wtd.backend.model.CarbonRecord;
 import com.ssafy.wtd.backend.dto.charge.ChargeConfirmReq;
 import com.ssafy.wtd.backend.dto.charge.ChargeConfirmRes;
 import com.ssafy.wtd.backend.dto.charge.ChargeStartReq;
 import com.ssafy.wtd.backend.dto.charge.ImageParsingRes;
 import com.ssafy.wtd.backend.model.ChargeRecord;
 import com.ssafy.wtd.backend.model.Station;
-import com.ssafy.wtd.backend.repository.ChargeRecordRepository;
-import com.ssafy.wtd.backend.repository.StationRepository;
+import com.ssafy.wtd.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +27,9 @@ public class RecordService {
 
     private final StationRepository stationRepository;
     private final ChargeRecordRepository recordRepository;
+    private final VehicleRepository vehicleRepository; // 차량 정보 조회를 위해 주입
+    private final CarbonRepository carbonRepository; // 탄소 저장용
+    private final CarbonConfigRepository configRepository; // 설정값 조회용
 
     // Geodesy 계산기 인스턴스 (Spring Bean으로 관리 가능하나, 여기서는 필드로 정의)
     // WGS84 타원체를 사용합니다. (GPS 시스템에서 표준으로 사용)
@@ -170,12 +173,8 @@ public class RecordService {
             throw new IllegalStateException("충전 기록 ID " + recordId + "는 현재 CHARGING 상태가 아닙니다.");
         }
 
-        // 데이터 계산
-        LocalDateTime startTime = record.getStartTime();
-        LocalDateTime endTime = request.getEndTime();
-
         // 충전 시간 계산 (분 단위)
-        long durationMin = ChronoUnit.MINUTES.between(startTime, endTime);
+        long durationMin = ChronoUnit.MINUTES.between(record.getStartTime(), request.getEndTime());
 
         // DB 업데이트
         recordRepository.updateRecord(
@@ -187,8 +186,8 @@ public class RecordService {
                 request.getChargingCost()       // 6. chargingCost (int)
         );
 
-        // TODO: 탄소 절감량 계산 및 저장
-
+        // 탄소 절감량 계산 및 저장
+        this.calculateAndSaveCarbonRecord(recordId, record.getUserId(), request.getChargedKwh());
 
         // 응답 생성
         ChargeConfirmRes.Data data = new ChargeConfirmRes.Data();
@@ -204,6 +203,31 @@ public class RecordService {
         response.setMessage("충전 기록이 저장되었습니다.");
 
         return response;
-
     }
+
+    /**
+     * 탄소 절감량을 계산하고 DB에 저장하는 내부 로직
+     */
+    private void calculateAndSaveCarbonRecord(Long recordId, Long userId, float chargedKwh) {
+        // 1. 설정값 및 전비 조회
+        float vehicleEfficiency = vehicleRepository.getEfficiencyByUserId(userId);
+        float avgFuelEff = configRepository.findValueByKey("avg_fuel_efficiency");
+        float gasCo2 = configRepository.findValueByKey("gasoline_co2_per_l");
+        float evCo2 = configRepository.findValueByKey("ev_co2_per_kwh");
+
+        // 2. 계산 공식 적용 (이미지 공식 기반)
+        // (충전량 * 전비 / 내연기관 평균연비 * L당 CO2) - (충전량 * 전력 CO2 계수)
+        float iceEmissions = (chargedKwh * vehicleEfficiency / avgFuelEff) * gasCo2;
+        float evEmissions = chargedKwh * evCo2;
+        float carbonSaved = iceEmissions - evEmissions;
+
+        // 3. DB 저장
+        CarbonRecord carbonRecord = new CarbonRecord();
+        carbonRecord.setRecordId(recordId);
+        carbonRecord.setUserId(userId);
+        carbonRecord.setCarbonSaved(carbonSaved);
+
+        carbonRepository.saveCarbonRecord(carbonRecord);
+    }
+
 }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.wtd.backend.repository.CarbonRepository">
+
+    <insert id="saveCarbonRecord" parameterType="com.ssafy.wtd.backend.model.CarbonRecord">
+        INSERT INTO carbon_record (record_id, user_id, carbon_saved, created_at)
+        VALUES (#{recordId}, #{userId}, #{carbonSaved}, NOW())
+    </insert>
+
+</mapper>
