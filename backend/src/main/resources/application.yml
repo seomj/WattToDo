@@ -17,3 +17,10 @@ jwt:
   secret: wtd-secret-key-for-jwt-authentication-very-important
   access-token-expiration: 1800000 # 30분
   refresh-token-expiration: 1209600000 # 14일
+
+clova:
+  ocr:
+    invoke:
+      url: ${INVOKE_URL}
+    secret:
+      key: ${CLOVA_KEY}

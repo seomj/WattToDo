@@ -28,3 +28,45 @@ ON DUPLICATE KEY UPDATE
     lng = VALUES(lng),
     city = VALUES(city),
     district = VALUES(district);
+
+-- 101번 사용자의 차량 정보 (아이오닉 6 롱레인지 2WD 기준)
+INSERT INTO vehicle (
+    user_id, 
+    model, 
+    efficiency, 
+    battery_capacity, 
+    max_range, 
+    dc_charge_type, 
+    ac_charge_type, 
+    created_at
+) VALUES (
+    101, 
+    '아이오닉 6 롱레인지', 
+    6.0,            -- 전비: 6.0 km/kWh
+    77.4,           -- 배터리 용량: 77.4 kWh
+    524.0,          -- 완충 시 주행 거리: 524 km
+    'DC콤보',       -- 급속 충전 방식
+    'AC단상 5핀',   -- 완속 충전 방식
+    NOW()
+);
+
+-- (추가 예시) 102번 사용자의 차량 정보 (테슬라 모델 3 RWD 기준)
+INSERT INTO vehicle (
+    user_id, 
+    model, 
+    efficiency, 
+    battery_capacity, 
+    max_range, 
+    dc_charge_type, 
+    ac_charge_type, 
+    created_at
+) VALUES (
+    102, 
+    'Model 3 RWD', 
+    5.1, 
+    60.0, 
+    380.0, 
+    '테슬라 전용(NACS)', 
+    '테슬라 전용(NACS)', 
+    NOW()
+);

@@ -10,7 +10,7 @@
 
     <update id="updateRecord" parameterType="com.ssafy.wtd.backend.model.ChargeRecord">
         UPDATE charge_record
-        SET status = #{status}, charged_kwh = #{chargedKwh}, end_time = #{endTime}, duration_min = #{durationMin}, charging_cost = #{chargingCost}
+        SET status = #{status}, charged_kwh = #{chargedKwh}, end_time = #{endTime}, duration_min = #{durationMin, javaType=float, jdbcType=FLOAT}, charging_cost = #{chargingCost}
         WHERE record_id = #{recordId}
     </update>
 

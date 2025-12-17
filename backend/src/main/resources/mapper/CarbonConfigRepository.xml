@@ -3,10 +3,14 @@
 
 <mapper namespace="com.ssafy.wtd.backend.repository.CarbonConfigRepository">
 
-    <select id="findValueByKey" resultType="float">
-        SELECT config_value
+    <select id="findLatestConfig" resultType="com.ssafy.wtd.backend.model.CarbonConfig">
+        SELECT
+        gasoline_co2_per_l,
+        avg_fuel_efficiency,
+        ev_co2_per_kwh
         FROM carbon_config
-        WHERE config_key = #{key}
+        ORDER BY updated_at DESC
+        LIMIT 1
     </select>
 
 </mapper>

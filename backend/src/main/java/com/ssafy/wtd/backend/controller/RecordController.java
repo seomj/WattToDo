@@ -44,9 +44,7 @@ public class RecordController {
             @PathVariable Long recordId,
             @RequestPart("file") MultipartFile imageFile) {
 
-        // TODO: recordService.processImageParsing(recordId, imageFile); 호출
-        // 현재는 AI 모킹 데이터를 반환합니다.
-        ImageParsingRes response = recordService.processMockParsing(recordId, imageFile);
+        ImageParsingRes response = recordService.processImageParsing(recordId, imageFile);
 
         return ResponseEntity.ok(response);
     }
@@ -58,7 +56,6 @@ public class RecordController {
             @PathVariable Long recordId,
             @RequestBody ChargeConfirmReq request) { // 변경된 DTO 이름 적용
 
-        // TODO: recordService.confirmAndFinalizeRecord(recordId, request); 호출
         ChargeConfirmRes response = recordService.confirmAndFinalizeRecord(recordId, request);
 
         return ResponseEntity.ok(response);

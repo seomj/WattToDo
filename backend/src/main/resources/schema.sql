@@ -96,7 +96,7 @@ CREATE TABLE charge_record (
     -- 시간 및 비용
     start_time DATETIME NOT NULL COMMENT '충전 시작 시간',
     end_time DATETIME COMMENT '충전 종료 시간',
-    duration_min INT COMMENT '총 충전 지속 시간 (분)',
+    duration_min FLOAT COMMENT '총 충전 지속 시간 (분)',
     charging_cost INT COMMENT '최종 충전 비용',
 
     -- 시스템 메타 데이터

@@ -1,10 +1,10 @@
 package com.ssafy.wtd.backend.repository;
 
+import com.ssafy.wtd.backend.model.CarbonConfig;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface CarbonConfigRepository {
-    // 키값을 기준으로 float 값을 반환
-    float findValueByKey(@Param("key") String key);
+    // 최신 설정값 레코드를 통째로 조회
+    CarbonConfig findLatestConfig();
 }

@@ -1,5 +1,7 @@
 package com.ssafy.wtd.backend.service.analysis;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafy.wtd.backend.model.CarbonConfig;
 import com.ssafy.wtd.backend.model.CarbonRecord;
 import com.ssafy.wtd.backend.dto.charge.ChargeConfirmReq;
 import com.ssafy.wtd.backend.dto.charge.ChargeConfirmRes;
@@ -19,7 +21,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +36,7 @@ public class RecordService {
     private final VehicleRepository vehicleRepository; // 차량 정보 조회를 위해 주입
     private final CarbonRepository carbonRepository; // 탄소 저장용
     private final CarbonConfigRepository configRepository; // 설정값 조회용
+    private final OcrService ocrService;
 
     // Geodesy 계산기 인스턴스 (Spring Bean으로 관리 가능하나, 여기서는 필드로 정의)
     // WGS84 타원체를 사용합니다. (GPS 시스템에서 표준으로 사용)
@@ -106,56 +113,100 @@ public class RecordService {
         record.setStartTime(LocalDateTime.now()); // 서버 시간 기록
         record.setStatus("CHARGING"); // 초기 상태는 CHARGING
 
-        // 4. 나머지 필드 초기값 설정 (DB의 DEFAULT 값에 의존하거나 NULL로 둠)
-        // record.setChargedKwh(null);
-        // record.setDurationMin(null);
-        // record.setChargingCost(null);
-
         return record;
     }
 
     @Transactional
-    public ImageParsingRes processMockParsing(Long recordId, MultipartFile imageFile) {
+    public ImageParsingRes processImageParsing(Long recordId, MultipartFile imageFile) {
         // 유효성 검사
         ChargeRecord record = recordRepository.selectRecordById(recordId);
-
         if (record == null) {
             // 기록이 존재하지 않음
             throw new NoSuchElementException("ID " + recordId + "에 해당하는 충전 기록을 찾을 수 없습니다.");
         }
-
         if (!"CHARGING".equals(record.getStatus())) {
             // 현재 CHARGING 상태가 아님 (이미 종료 또는 대기 중일 수 있음)
             throw new IllegalStateException("충전 기록 ID " + recordId + "는 현재 CHARGING 상태가 아닙니다.");
         }
-
-        // 파일 처리
         if (imageFile.isEmpty()) {
+            // 이미지 파일이 없음
             throw new IllegalArgumentException("업로드할 이미지 파일이 비어 있습니다.");
         }
 
-        // AI 분석 모킹 데이터 생성
-        float startKwh = record.getStartKwh();
-        float mockChargedKwh = startKwh + 15.5f; // 예시: 15.5 kWh 더 충전
-        int mockChargingCost = 5200; // 예시 금액
-        LocalDateTime mockEndTime = LocalDateTime.now();
+        try {
+            // Clova OCR 호출
+            String ocrResponse = ocrService.callClovaOcr(imageFile);
+            String fullText = extractFullText(ocrResponse);
 
-        // 응답 객체 생성
-        ImageParsingRes.Parsed parsedData = new ImageParsingRes.Parsed();
-        parsedData.setChargedKwh(mockChargedKwh);
-        parsedData.setChargingCost(mockChargingCost);
-        parsedData.setEndTime(mockEndTime);
+            // 데이터 추출 (정규식 패턴 활용)
+            // 충전량 (예: 12.48KWh -> 12.48)
+            float chargedKwh = parseValue(fullText, "충전량\\s*[:\\s]*([\\d.]+)", 0.0f);
 
-        ImageParsingRes.Data data = new ImageParsingRes.Data();
-        data.setRecordId(recordId);
-        data.setParsed(parsedData);
+            // 충전금액 (예: 4334원 -> 4334.0)
+            float costRaw = parseValue(fullText, "(?:금액|충전금액)\\s*[:\\s]*([\\d,]+)", 0.0f);
+            int chargingCost = Math.round(costRaw);
 
-        ImageParsingRes response = new ImageParsingRes();
-        response.setSuccess(true);
-        response.setData(data);
-        response.setMessage("AI가 충전 정보를 추출했습니다. 값을 확인 후 승인해주세요. (Mocking)");
+            // 충전소요시간 (예: 16:35 -> 16.58)
+            String durationText = parseString(fullText, "충전시간\\s*[:\\s]*([\\d:]+)");
 
-        return response;
+            // 응답 객체 생성
+            ImageParsingRes.Parsed parsedData = new ImageParsingRes.Parsed();
+            parsedData.setChargedKwh(chargedKwh);
+            parsedData.setChargingCost(chargingCost);
+            parsedData.setDurationText(durationText); // 예: 16:35
+
+            ImageParsingRes.Data data = new ImageParsingRes.Data();
+            data.setRecordId(recordId);
+            data.setParsed(parsedData);
+
+            ImageParsingRes response = new ImageParsingRes();
+            response.setSuccess(true);
+            response.setData(data);
+            response.setMessage("정보를 추출했습니다.");
+
+            return response;
+
+        } catch (Exception e) {
+            throw new RuntimeException("OCR 처리 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * OCR 응답에서 모든 텍스트를 공백 기반으로 합치기
+     */
+    private String extractFullText(String ocrResponse) {
+        try {
+            // Jackson ObjectMapper를 사용하여 JSON을 Map으로 바로 변환
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> responseMap = mapper.readValue(ocrResponse, Map.class);
+
+            List<Map<String, Object>> images = (List<Map<String, Object>>) responseMap.get("images");
+            List<Map<String, Object>> fields = (List<Map<String, Object>>) images.get(0).get("fields");
+
+            StringBuilder sb = new StringBuilder();
+            for (Map<String, Object> field : fields) {
+                sb.append(field.get("inferText")).append(" ");
+            }
+            return sb.toString().trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private String parseString(String text, String regex) {
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(text);
+        return matcher.find() ? matcher.group(1) : null;
+    }
+
+    private float parseValue(String text, String regex, float defaultValue) {
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(text);
+        if (matcher.find()) {
+            String val = matcher.group(1).replace(",", ""); // 금액 쉼표 제거
+            return Float.parseFloat(val);
+        }
+        return defaultValue;
     }
 
     @Transactional
@@ -173,16 +224,27 @@ public class RecordService {
             throw new IllegalStateException("충전 기록 ID " + recordId + "는 현재 CHARGING 상태가 아닙니다.");
         }
 
-        // 충전 시간 계산 (분 단위)
-        long durationMin = ChronoUnit.MINUTES.between(record.getStartTime(), request.getEndTime());
+        // 시간 계산 로직
+        float durationMin = calculateDurationMinutes(request.getDurationText());
+
+        LocalDateTime startTime = record.getStartTime();
+        LocalDateTime endTime;
+
+        if (startTime != null && durationMin > 0) {
+            long secondsToAdd = (long) (durationMin * 60);
+            endTime = startTime.plusSeconds(secondsToAdd);
+        } else {
+            // 시작 시각이 없거나 파싱 실패 시 현재 서버 시각 사용
+            endTime = LocalDateTime.now();
+        }
 
         // DB 업데이트
         recordRepository.updateRecord(
                 recordId,                       // 1. recordId
                 "COMPLETED",                    // 2. status
                 request.getChargedKwh(),        // 3. chargedKwh (float)
-                request.getEndTime(),           // 4. endTime (LocalDateTime)
-                (int)durationMin,               // 5. durationMin (int)
+                endTime,                        // 4. endTime (LocalDateTime)
+                durationMin,                    // 5. durationMin (float)
                 request.getChargingCost()       // 6. chargingCost (int)
         );
 
@@ -195,7 +257,7 @@ public class RecordService {
         data.setStationId(record.getStationId());
         data.setChargedKwh(request.getChargedKwh());
         data.setChargingCost(request.getChargingCost());
-        data.setDurationMin((int)durationMin);
+        data.setDurationMin(durationMin);
 
         ChargeConfirmRes response = new ChargeConfirmRes();
         response.setSuccess(true);
@@ -206,14 +268,41 @@ public class RecordService {
     }
 
     /**
+     * 00:12:50 또는 16:35 포맷을 float 형태의 '분'으로 변환
+     */
+    private float calculateDurationMinutes(String durationText) {
+        if (durationText == null || !durationText.contains(":")) return 0.0f;
+
+        String[] parts = durationText.split(":");
+        int totalSeconds = 0;
+
+        try {
+            if (parts.length == 2) { // mm:ss
+                totalSeconds = (Integer.parseInt(parts[0]) * 60) + Integer.parseInt(parts[1]);
+            } else if (parts.length == 3) { // hh:mm:ss
+                totalSeconds = (Integer.parseInt(parts[0]) * 3600) + (Integer.parseInt(parts[1]) * 60) + Integer.parseInt(parts[2]);
+            }
+        } catch (NumberFormatException e) {
+            return 0.0f;
+        }
+
+        return (float) totalSeconds / 60;
+    }
+
+    /**
      * 탄소 절감량을 계산하고 DB에 저장하는 내부 로직
      */
     private void calculateAndSaveCarbonRecord(Long recordId, Long userId, float chargedKwh) {
         // 1. 설정값 및 전비 조회
         float vehicleEfficiency = vehicleRepository.getEfficiencyByUserId(userId);
-        float avgFuelEff = configRepository.findValueByKey("avg_fuel_efficiency");
-        float gasCo2 = configRepository.findValueByKey("gasoline_co2_per_l");
-        float evCo2 = configRepository.findValueByKey("ev_co2_per_kwh");
+        CarbonConfig config = configRepository.findLatestConfig();
+        if (config == null) {
+            // 확실하지 않음: DB에 설정값이 하나도 없는 경우에 대한 방어 로직 (추측입니다)
+            throw new IllegalStateException("탄소 계산 기준 설정(carbon_config)이 존재하지 않습니다.");
+        }
+        float avgFuelEff = config.getAvgFuelEfficiency();
+        float gasCo2 = config.getGasolineCo2PerL();
+        float evCo2 = config.getEvCo2PerKwh();
 
         // 2. 계산 공식 적용 (이미지 공식 기반)
         // (충전량 * 전비 / 내연기관 평균연비 * L당 CO2) - (충전량 * 전력 CO2 계수)

@@ -15,7 +15,7 @@ public interface ChargeRecordRepository {
             @Param("status") String status,
             @Param("chargedKwh") float chargedKwh,
             @Param("endTime") LocalDateTime endTime,
-            @Param("durationMin") int durationMin,
+            @Param("durationMin") float durationMin,
             @Param("chargingCost") int chargingCost
     ); // 충전 완료 후 최종 데이터 업데이트
     ChargeRecord selectActiveRecordByUserId(Long userId); // 충전 중인 기록을 조회하는 메서드
