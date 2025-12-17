@@ -21,7 +21,8 @@ public class TempUserDetailsService implements UserDetailsService {
 
         return User.builder()
                 .username("test@example.com")
-                .password("{noop}password") // 임시라 암호화 생략
+//                .password("{noop}password") // 임시라 암호화 생략
+                .password("$2a$10$5Dm2Sy50TMLwILSU4KMTNed8SGynZ73IBrCpBS9kF8pqxmswj3s2O")
                 .roles("USER")               // ROLE_USER
                 .build();
     }
