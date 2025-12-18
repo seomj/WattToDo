@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS refresh_token (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,     -- Refresh Token 고유 ID
 
     user_id BIGINT NOT NULL,                  -- 사용자 ID (FK)
-    token VARCHAR(255) NOT NULL,              -- Refresh Token 값
+    token TEXT NOT NULL,              -- Refresh Token 값
     expires_at DATETIME NOT NULL,             -- 만료 시각
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 생성 시각
 

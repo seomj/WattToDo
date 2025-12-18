@@ -26,7 +26,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // 👉 com.ssafy.wtd.backend.security 패키지에 존재해야 함
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
