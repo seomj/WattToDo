@@ -5,26 +5,40 @@ const props = defineProps({
   user: {
     type: Object,
     required: true
+  },
+  currentView: {
+    type: String,
+    default: 'HOME'
   }
 })
 
-const emit = defineEmits(['open-charging-modal'])
+const emit = defineEmits(['open-charging-modal', 'navigate'])
 
 const isCharging = computed(() => props.user.status === 'CHARGING')
 </script>
 
 <template>
   <header class="header">
-    <div class="logo-area">
+    <div class="logo-area" @click="$emit('navigate', 'HOME')" style="cursor: pointer;">
       <div class="logo-icon">⚡</div>
       <span class="logo-text">WattToDo</span>
     </div>
 
     <nav class="nav-area">
-      <a href="#" class="nav-item active">
+      <a 
+        href="#" 
+        class="nav-item" 
+        :class="{ active: currentView === 'HOME' }"
+        @click.prevent="$emit('navigate', 'HOME')"
+      >
         <span class="icon">🏠</span> 홈
       </a>
-      <a href="#" class="nav-item">
+      <a 
+        href="#" 
+        class="nav-item"
+        :class="{ active: currentView === 'ACTIVITY' }"
+        @click.prevent="$emit('navigate', 'ACTIVITY')"
+      >
         <span class="icon">🧭</span> 활동
       </a>
       <a href="#" class="nav-item">

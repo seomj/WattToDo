@@ -4,6 +4,10 @@ import Header from './components/Header.vue'
 import ChargingModal from './components/ChargingModal.vue'
 import AnalysisResultModal from './components/AnalysisResultModal.vue'
 import RegistrationCompleteModal from './components/RegistrationCompleteModal.vue'
+import ActivityView from './views/ActivityView.vue'
+
+// Routing State
+const currentView = ref('HOME') // 'HOME', 'ACTIVITY'
 
 // Mock User State
 const user = ref({
@@ -54,10 +58,16 @@ const handleCompleteConfirm = () => {
 </script>
 
 <template>
-  <Header :user="user" @open-charging-modal="handleOpenChargingModal" />
+  <Header 
+    :user="user" 
+    :current-view="currentView"
+    @open-charging-modal="handleOpenChargingModal" 
+    @navigate="(view) => currentView = view"
+  />
 
   <main class="main-content">
-    <div class="search-bar">
+    <div v-if="currentView === 'HOME'">
+      <div class="search-bar">
       <span class="search-icon">🔍</span>
       <input type="text" placeholder="충전소 검색 / 장소 검색" />
       <button class="location-btn">➤</button>
@@ -67,6 +77,9 @@ const handleCompleteConfirm = () => {
     <div class="map-placeholder">
       (Map View Area)
     </div>
+    </div>
+
+    <ActivityView v-if="currentView === 'ACTIVITY'" />
   </main>
 
   <ChargingModal 
