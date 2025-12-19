@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.wtd.backend.repository.UserRepository">
+
+    <resultMap id="UserResultMap" type="com.ssafy.wtd.backend.model.User">
+        <id     property="userId"    column="user_id"/>
+        <result property="email"     column="email"/>
+        <result property="password"  column="password"/>
+        <result property="name"      column="name"/>
+        <result property="nickname"  column="nickname"/>
+        <result property="role"      column="role"/>
+        <result property="status"    column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByUserId" parameterType="long" resultMap="UserResultMap">
+        SELECT
+        user_id,
+        email,
+        password,
+        name,
+        nickname,
+        role,
+        status,
+        created_at,
+        updated_at
+        FROM user
+        WHERE user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <select id="findByEmail" parameterType="string" resultMap="UserResultMap">
+        SELECT
+        user_id,
+        email,
+        password,
+        name,
+        nickname,
+        role,
+        status,
+        created_at,
+        updated_at
+        FROM user
+        WHERE email = #{email}
+        LIMIT 1
+    </select>
+
+    <update id="updateMyInfo">
+        UPDATE user
+        SET
+        name = #{name},
+        nickname = #{nickname},
+        updated_at = NOW()
+        WHERE user_id = #{userId}
+        AND status = 'ACTIVE'
+    </update>
+
+    <update id="disableUser">
+        UPDATE user
+        SET
+        status = 'DISABLED',
+        updated_at = NOW()
+        WHERE user_id = #{userId}
+        AND status = 'ACTIVE'
+    </update>
+
+
+</mapper>

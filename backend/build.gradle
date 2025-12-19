@@ -38,9 +38,10 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:4.0.0'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+//	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+//	testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:4.0.0'
+//	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.gavaghan:geodesy:1.1.3'
 }
 

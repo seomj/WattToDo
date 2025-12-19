@@ -6,7 +6,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-@Service
+//@Service
 // 실행을 위한 임시 클래스
 public class TempUserDetailsService implements UserDetailsService {
 
@@ -21,7 +21,8 @@ public class TempUserDetailsService implements UserDetailsService {
 
         return User.builder()
                 .username("test@example.com")
-                .password("{noop}password") // 임시라 암호화 생략
+//                .password("{noop}password") // 임시라 암호화 생략
+                .password("$2a$10$5Dm2Sy50TMLwILSU4KMTNed8SGynZ73IBrCpBS9kF8pqxmswj3s2O")
                 .roles("USER")               // ROLE_USER
                 .build();
     }
