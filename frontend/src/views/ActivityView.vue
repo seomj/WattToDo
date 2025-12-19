@@ -8,9 +8,9 @@ const recommendations = ref([])
 const hasSearched = ref(false)
 
 // Filter State
-const chargeTime = ref('30')
-const ecoFriendly = ref('all') // 'eco', 'all'
-const distance = ref('10') // '5', '10', '15', '20' (walk mins)
+const chargeTime = ref(30)
+const isEcoFriendly = ref(false) 
+const travelTime = ref(10) // Minutes, 10 min increments
 const selectedCategory = ref([])
 const usePublicTransport = ref(false)
 const personnel = ref(1)
@@ -115,98 +115,113 @@ const handleOpenMap = () => {
         <!-- Basic: Charge Time -->
         <div class="filter-group">
           <label>🕒 충전 시간 <span class="required">*</span></label>
-          <div class="chip-group">
-            <button 
-              v-for="time in ['15', '30', '45', '60', '90', '120']" 
-              :key="time"
-              class="chip"
-              :class="{ active: chargeTime === time }"
-              @click="chargeTime = time"
-            >
-              {{ time }}분
-            </button>
+          <div class="counter-control">
+            <button @click="chargeTime > 5 ? chargeTime -= 5 : null">-</button>
+            <div class="input-wrapper">
+              <input type="number" v-model="chargeTime" class="time-input" />
+              <span>분</span>
+            </div>
+            <button @click="chargeTime += 5">+</button>
           </div>
         </div>
 
         <!-- Expanded Filters -->
         <div v-if="isExpandedSearch" class="expanded-filters">
-          <div class="filter-group">
-            <label>🌿 친환경 여부</label>
-            <div class="chip-group">
-              <button class="chip" :class="{ active: ecoFriendly === 'eco' }" @click="ecoFriendly = 'eco'">친환경 장소만</button>
-              <button class="chip" :class="{ active: ecoFriendly === 'all' }" @click="ecoFriendly = 'all'">상관없음</button>
+          <div class="filters-grid">
+            <!-- Row 1: Toggles & Counters -->
+            <div class="filter-row top-controls">
+              <div class="filter-group checkbox-group">
+                 <label>🌿 친환경 여부</label>
+                 <div class="checkbox-wrapper">
+                     <label class="checkbox-label">
+                       <input type="checkbox" v-model="isEcoFriendly" />
+                       포함
+                     </label>
+                 </div>
+              </div>
+
+               <div class="filter-group checkbox-group">
+                <label>🚌 대중교통</label>
+                <div class="checkbox-wrapper">
+                  <label class="checkbox-label">
+                    <input type="checkbox" v-model="usePublicTransport" />
+                    이용 가능
+                  </label>
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <label>⏱️ 이동 시간</label>
+                <div class="counter-control">
+                  <button @click="travelTime > 10 ? travelTime -= 10 : null">-</button>
+                  <div class="input-wrapper">
+                    <input type="number" v-model="travelTime" class="time-input" />
+                    <span>분</span>
+                  </div>
+                  <button @click="travelTime += 10">+</button>
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <label>👥 인원</label>
+                <div class="counter-control">
+                  <button @click="personnel > 1 ? personnel-- : null">-</button>
+                  <div class="input-wrapper">
+                    <input type="number" v-model="personnel" class="time-input" />
+                    <span>명</span>
+                  </div>
+                  <button @click="personnel++">+</button>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div class="filter-group">
-            <label>📍 거리</label>
-            <div class="chip-group">
-              <button class="chip" :class="{ active: distance === '5' }" @click="distance = '5'">도보 5분</button>
-              <button class="chip" :class="{ active: distance === '10' }" @click="distance = '10'">도보 10분</button>
-              <button class="chip" :class="{ active: distance === '15' }" @click="distance = '15'">도보 15분</button>
-              <button class="chip" :class="{ active: distance === '20' }" @click="distance = '20'">도보 20분</button>
+            <!-- Row 2: Purpose -->
+            <div class="filter-group full-width">
+               <label>🎯 목적</label>
+               <div class="chip-group">
+                 <button 
+                   v-for="purp in ['휴식', '식사', '공부', '운동', '쇼핑', '관광']" 
+                   :key="purp"
+                   class="chip"
+                   :class="{ active: selectedPurpose.includes(purp) }"
+                   @click="selectedPurpose.includes(purp) ? selectedPurpose = selectedPurpose.filter(p => p !== purp) : selectedPurpose.push(purp)"
+                 >
+                   {{ purp }}
+                 </button>
+               </div>
             </div>
-          </div>
-
-          <div class="filter-group checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="usePublicTransport" />
-              대중교통 이용 가능
-            </label>
-          </div>
-
-          <div class="filter-group">
-            <label>👥 인원</label>
-            <div class="counter-control">
-              <button @click="personnel > 1 ? personnel-- : null">-</button>
-              <span>{{ personnel }}명</span>
-              <button @click="personnel++">+</button>
+            
+            <!-- Row 3: Place -->
+            <div class="filter-group full-width">
+               <label>🏢 장소</label>
+               <div class="chip-group">
+                 <button 
+                   v-for="cat in ['카페', '편의점', '공원', '산책로', '식당', '쇼핑몰', '서점', '도서관']" 
+                   :key="cat"
+                   class="chip"
+                   :class="{ active: selectedCategory.includes(cat) }"
+                   @click="selectedCategory.includes(cat) ? selectedCategory = selectedCategory.filter(c => c !== cat) : selectedCategory.push(cat)"
+                 >
+                   {{ cat }}
+                 </button>
+               </div>
             </div>
-          </div>
 
-          <div class="filter-group">
-             <label>🎯 목적</label>
-             <div class="chip-group">
-               <button 
-                 v-for="purp in ['휴식', '식사', '공부', '운동', '쇼핑', '관광']" 
-                 :key="purp"
-                 class="chip"
-                 :class="{ active: selectedPurpose.includes(purp) }"
-                 @click="selectedPurpose.includes(purp) ? selectedPurpose = selectedPurpose.filter(p => p !== purp) : selectedPurpose.push(purp)"
-               >
-                 {{ purp }}
-               </button>
-             </div>
-          </div>
-          
-          <div class="filter-group">
-             <label>🏢 장소</label>
-             <div class="chip-group">
-               <button 
-                 v-for="cat in ['카페', '편의점', '공원', '산책로', '식당', '쇼핑몰', '서점', '도서관']" 
-                 :key="cat"
-                 class="chip"
-                 :class="{ active: selectedCategory.includes(cat) }"
-                 @click="selectedCategory.includes(cat) ? selectedCategory = selectedCategory.filter(c => c !== cat) : selectedCategory.push(cat)"
-               >
-                 {{ cat }}
-               </button>
-             </div>
-          </div>
-
-          <div class="filter-group">
-             <label>✨ 선호도</label>
-             <div class="chip-group">
-               <button 
-                 v-for="pref in ['조용한 곳', '사람 적은 곳', '빠르게 다녀올 곳', '넓은 공간', '실내']" 
-                 :key="pref"
-                 class="chip"
-                 :class="{ active: selectedPreference.includes(pref) }"
-                 @click="selectedPreference.includes(pref) ? selectedPreference = selectedPreference.filter(p => p !== pref) : selectedPreference.push(pref)"
-               >
-                 {{ pref }}
-               </button>
-             </div>
+            <!-- Row 4: Preference -->
+            <div class="filter-group full-width">
+               <label>✨ 선호도</label>
+               <div class="chip-group">
+                 <button 
+                   v-for="pref in ['조용한 곳', '사람 적은 곳', '빠르게 다녀올 곳', '넓은 공간', '실내', '실외']" 
+                   :key="pref"
+                   class="chip"
+                   :class="{ active: selectedPreference.includes(pref) }"
+                   @click="selectedPreference.includes(pref) ? selectedPreference = selectedPreference.filter(p => p !== pref) : selectedPreference.push(pref)"
+                 >
+                   {{ pref }}
+                 </button>
+               </div>
+            </div>
           </div>
         </div>
       </div>
@@ -335,33 +350,20 @@ h1 {
   margin-bottom: 2rem;
 }
 
-.checkbox-group {
-  display: flex;
-  align-items: center;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-}
-
 .counter-control {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   background-color: #f3f4f6;
-  padding: 0.5rem;
-  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px; /* Pill shape */
   width: fit-content;
+  border: 1px solid #e5e7eb;
 }
 
 .counter-control button {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: none;
   background-color: white;
@@ -371,6 +373,50 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+}
+
+.counter-control button:hover {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.counter-control button:active {
+  transform: scale(0.95);
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0.5rem;
+}
+
+.time-input {
+  width: 44px;
+  text-align: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  outline: none;
+  /* Hide number arrows */
+  -moz-appearance: textfield;
+}
+
+.time-input::-webkit-outer-spin-button,
+.time-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input-wrapper span {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.95rem;
 }
 
 .filter-group label {
@@ -567,5 +613,48 @@ h1 {
   .cards-grid {
     grid-template-columns: 1fr;
   }
+}
+
+
+
+/* Grid Layout for Detailed Search */
+.filters-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.top-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.filter-group.full-width {
+  width: 100%;
+}
+
+.checkbox-wrapper {
+  height: 40px; /* Match counter height */
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.checkbox-label input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
 }
 </style>
