@@ -1,0 +1,50 @@
+package com.ssafy.wtd.backend.controller;
+
+import com.ssafy.wtd.backend.dto.ApiRes;
+import com.ssafy.wtd.backend.dto.user.MyInfoRes;
+import com.ssafy.wtd.backend.dto.user.MyInfoUpdateReq;
+import com.ssafy.wtd.backend.dto.user.MyInfoUpdateRes;
+import com.ssafy.wtd.backend.security.CustomUserDetails;
+import com.ssafy.wtd.backend.service.MyInfoService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequiredArgsConstructor
+public class MyInfoController {
+
+    private final MyInfoService myInfoService;
+
+    @GetMapping("/myinfo")
+    public ApiRes<MyInfoRes> getMyInfo(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ApiRes.ok(
+                myInfoService.getMyInfo(userDetails.getUserId())
+        );
+    }
+
+    @PatchMapping("/myinfo")
+    public ApiRes<MyInfoUpdateRes> updateMyInfo(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody MyInfoUpdateReq request
+    ) {
+        return ApiRes.ok(
+                myInfoService.updateMyInfo(
+                        userDetails.getUserId(),
+                        request
+                )
+        );
+    }
+
+    @DeleteMapping("/myinfo")
+    public ApiRes<Void> deleteMyInfo(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        myInfoService.deleteMyInfo(userDetails.getUserId());
+        return ApiRes.ok(null);
+    }
+
+
+}

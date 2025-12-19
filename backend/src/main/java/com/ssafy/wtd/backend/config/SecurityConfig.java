@@ -1,6 +1,7 @@
 package com.ssafy.wtd.backend.config;
 
 import com.ssafy.wtd.backend.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,6 +48,23 @@ public class SecurityConfig {
 
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
+
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Unauthorized\"}"
+                            );
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Forbidden\"}"
+                            );
+                        })
+                )
 
                 // 요청별 접근 제어
                 .authorizeHttpRequests(auth -> auth
