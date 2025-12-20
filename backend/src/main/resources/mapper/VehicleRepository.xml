@@ -11,4 +11,72 @@
         LIMIT 1
     </select>
 
+    <resultMap id="VehicleResultMap" type="com.ssafy.wtd.backend.model.Vehicle">
+        <id property="vehicleId" column="vehicle_id"/>
+        <result property="userId" column="user_id"/>
+
+        <result property="model" column="model"/>
+        <result property="efficiency" column="efficiency"/>
+        <result property="batteryCapacity" column="battery_capacity"/>
+        <result property="maxRange" column="max_range"/>
+        <result property="dcChargeType" column="dc_charge_type"/>
+        <result property="acChargeType" column="ac_charge_type"/>
+
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findByUserId" resultMap="VehicleResultMap">
+        SELECT
+        vehicle_id, user_id, model, efficiency, battery_capacity, max_range,
+        dc_charge_type, ac_charge_type, created_at
+        FROM vehicle
+        WHERE user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <!-- 스펙 자동 채움용: 동일 model 중 최근 데이터 1건 -->
+    <select id="findSpecByModel" resultMap="VehicleResultMap">
+        SELECT
+        vehicle_id, user_id, model, efficiency, battery_capacity, max_range,
+        dc_charge_type, ac_charge_type, created_at
+        FROM vehicle
+        WHERE model = #{model}
+        AND (
+        efficiency IS NOT NULL
+        OR battery_capacity IS NOT NULL
+        OR max_range IS NOT NULL
+        OR dc_charge_type IS NOT NULL
+        OR ac_charge_type IS NOT NULL
+        )
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.ssafy.wtd.backend.model.Vehicle" useGeneratedKeys="true" keyProperty="vehicleId">
+        INSERT INTO vehicle (
+        user_id, model, efficiency, battery_capacity, max_range,
+        dc_charge_type, ac_charge_type, created_at
+        ) VALUES (
+        #{userId}, #{model}, #{efficiency}, #{batteryCapacity}, #{maxRange},
+        #{dcChargeType}, #{acChargeType}, NOW()
+        )
+    </insert>
+
+    <update id="updateByUserId" parameterType="com.ssafy.wtd.backend.model.Vehicle">
+        UPDATE vehicle
+        SET
+        model = #{model},
+        efficiency = #{efficiency},
+        battery_capacity = #{batteryCapacity},
+        max_range = #{maxRange},
+        dc_charge_type = #{dcChargeType},
+        ac_charge_type = #{acChargeType}
+        WHERE user_id = #{userId}
+    </update>
+
+    <delete id="deleteByUserId">
+        DELETE FROM vehicle
+        WHERE user_id = #{userId}
+    </delete>
+
 </mapper>
