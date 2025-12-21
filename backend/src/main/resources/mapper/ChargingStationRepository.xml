@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.wtd.backend.repository.station.ChargingStationRepository">
+
+    <!--
+        charging_station upsert
+        기준: station_id (PK)
+    -->
+    <insert id="saveOrUpdate">
+        INSERT INTO charging_station (
+        station_id,
+        station_name,
+        address,
+        lat,
+        lng
+        )
+        VALUES (
+        #{stationId},
+        #{stationName},
+        #{address},
+        #{lat},
+        #{lng}
+        )
+        ON DUPLICATE KEY UPDATE
+        station_name = VALUES(station_name),
+        address      = VALUES(address),
+        lat          = VALUES(lat),
+        lng          = VALUES(lng)
+    </insert>
+
+</mapper>

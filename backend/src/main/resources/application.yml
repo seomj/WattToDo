@@ -12,6 +12,8 @@ mybatis:
   mapper-locations: classpath:/mapper/**/*.xml
   configuration:
     map-underscore-to-camel-case: true
+    # 디버깅 위해 추가
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 jwt:
   secret: wtd-secret-key-for-jwt-authentication-very-important
@@ -24,3 +26,7 @@ clova:
       url: ${INVOKE_URL}
     secret:
       key: ${CLOVA_KEY}
+
+env:
+  api:
+    key: ${ENV_API_KEY}

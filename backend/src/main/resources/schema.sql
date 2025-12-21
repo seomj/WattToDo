@@ -52,12 +52,11 @@ CREATE TABLE charging_station (
 CREATE TABLE charger (
     charger_id VARCHAR(20) PRIMARY KEY,     -- 충전기 고유 ID
     station_id VARCHAR(20) NOT NULL,        -- charging_station FK
-    
+
     charger_name VARCHAR(50),               -- 충전기 번호(현장 표기 1번, 2번 등)
-    model_name VARCHAR(50),                 -- 충전기 기계 모델명
-    
+    charge_type VARCHAR(20) NOT NULL,        -- 충전 타입 (AC, DC, FAST 등)
+
     status INT NOT NULL,                    -- 0=정상, 1=고장, 2=점검, 3=사용중
-    last_sync DATETIME NOT NULL,            -- 상태 갱신 시각
 
     FOREIGN KEY (station_id) REFERENCES charging_station(station_id)
 ) COMMENT '충전소에 설치된 개별 충전기 정보 및 상태';

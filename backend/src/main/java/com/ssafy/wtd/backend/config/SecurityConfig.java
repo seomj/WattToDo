@@ -99,6 +99,14 @@ public class SecurityConfig {
                         ).permitAll()
 
                         /* =========================
+                         * 테스트를 위한 임시 허용
+                         * ========================= */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/admin/stations/refresh"
+                        ).permitAll()
+
+                        /* =========================
                          * 관리자 전용 API
                          * ========================= */
                         .requestMatchers("/admin/**")
