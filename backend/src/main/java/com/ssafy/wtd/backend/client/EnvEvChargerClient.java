@@ -14,7 +14,7 @@ public class EnvEvChargerClient {
     private static final String BASE_URL =
             "https://apis.data.go.kr/B552584/EvCharger/getChargerInfo";
 
-    @Value("${env.api.key}")
+    @Value("${ev.charger.key}")
     private String serviceKey;
 
     private final RestTemplate restTemplate;

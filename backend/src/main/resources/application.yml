@@ -27,6 +27,6 @@ clova:
     secret:
       key: ${CLOVA_KEY}
 
-env:
-  api:
-    key: ${ENV_API_KEY}
+ev:
+  charger:
+    key: ${EV_CHARGER_KEY}
