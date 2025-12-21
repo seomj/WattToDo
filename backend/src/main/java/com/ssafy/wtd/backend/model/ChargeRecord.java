@@ -17,6 +17,7 @@ public class ChargeRecord {
     private Float startKwh;
     private Float targetKwh;
     private Float chargedKwh;
+    private Float chargerCapacity;
 
     // 시간 및 비용
     private LocalDateTime startTime;

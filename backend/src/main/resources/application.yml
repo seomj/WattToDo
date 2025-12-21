@@ -20,6 +20,10 @@ jwt:
   access-token-expiration: 1800000 # 30분
   refresh-token-expiration: 1209600000 # 14일
 
+gms:
+  base-url: https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions # o3-mini 모델
+  api-key: ${GMS_API_KEY}
+
 clova:
   ocr:
     invoke:
@@ -30,3 +34,7 @@ clova:
 ev:
   charger:
     key: ${EV_CHARGER_KEY}
+
+weather:
+  api:
+    key: ${WEATHER_API_KEY}

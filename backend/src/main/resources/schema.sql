@@ -92,6 +92,9 @@ CREATE TABLE charge_record (
     target_kwh FLOAT COMMENT '사용자가 설정한 목표 충전량 (kWh)',
     charged_kwh FLOAT COMMENT '실제 충전된 양 (kWh)',
 
+    -- 충전기 사양 (공식의 P값)
+    charger_capacity FLOAT NOT NULL DEFAULT 100.0 COMMENT '충전기 용량 (kW) - 예상 시간 계산용 P',
+
     -- 시간 및 비용
     start_time DATETIME NOT NULL COMMENT '충전 시작 시간',
     end_time DATETIME COMMENT '충전 종료 시간',
