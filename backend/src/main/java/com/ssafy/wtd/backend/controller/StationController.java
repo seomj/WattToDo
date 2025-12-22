@@ -38,4 +38,17 @@ public class StationController {
                 stationQueryService.getNearbyStationMarkers(lat, lng, radius)
         );
     }
+
+    /**
+     * 지역별 검색 (city, district)
+     */
+    @GetMapping("/search")
+    public ApiRes<List<StationMarkerDto>> searchStations(
+            @RequestParam String city,
+            @RequestParam String district
+    ) {
+        return ApiRes.ok(
+                stationQueryService.getStationsByCityAndDistrict(city, district)
+        );
+    }
 }

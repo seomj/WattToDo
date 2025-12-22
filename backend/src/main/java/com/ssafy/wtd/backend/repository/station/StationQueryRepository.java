@@ -19,4 +19,10 @@ public interface StationQueryRepository {
             @Param("minLng") double minLng,
             @Param("maxLng") double maxLng
     );
+
+    // 지역별 검색 (city, district)
+    List<StationMarkerDto> findByCityAndDistrict(
+            @Param("city") String city,
+            @Param("district") String district
+    );
 }

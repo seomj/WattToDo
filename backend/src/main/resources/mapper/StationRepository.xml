@@ -9,4 +9,22 @@
         WHERE station_id = #{stationId}
     </select>
 
+    <!-- 지역별 검색 (city, district) -->
+    <select id="findByCityAndDistrict"
+            resultType="com.ssafy.wtd.backend.dto.station.StationMarkerDto">
+
+        SELECT
+            s.station_id   AS stationId,
+            s.station_name AS stationName,
+            s.lat          AS lat,
+            s.lng          AS lng,
+            SUM(CASE WHEN c.status = '0' THEN 1 ELSE 0 END) AS availableCount,
+            COUNT(c.charger_id) AS totalCount
+        FROM charging_station s
+        LEFT JOIN charger c ON s.station_id = c.station_id
+        WHERE
+            s.address LIKE CONCAT('%', #{city}, '%')
+            AND s.address LIKE CONCAT('%', #{district}, '%')
+        GROUP BY s.station_id, s.station_name, s.lat, s.lng
+    </select>
 </mapper>

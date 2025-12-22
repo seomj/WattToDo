@@ -53,6 +53,20 @@ public class StationQueryService {
     }
 
     /**
+     * 지역별 검색 (city, district)
+     */
+    public List<StationMarkerDto> getStationsByCityAndDistrict(
+            String city,
+            String district
+    ) {
+        List<StationMarkerDto> stations =
+                stationQueryRepository.findByCityAndDistrict(city, district);
+
+        applyMarkerColor(stations);
+        return stations;
+    }
+
+    /**
      * 마커 색상 계산 (공통 로직)
      */
     private void applyMarkerColor(List<StationMarkerDto> stations) {

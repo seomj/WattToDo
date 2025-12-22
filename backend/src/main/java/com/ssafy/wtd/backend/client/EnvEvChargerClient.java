@@ -1,7 +1,9 @@
 package com.ssafy.wtd.backend.client;
 
 import com.ssafy.wtd.backend.dto.external.EnvEvChargerRes;
+import com.ssafy.wtd.backend.service.CityDistrictUpdater;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -18,6 +20,9 @@ public class EnvEvChargerClient {
     private String serviceKey;
 
     private final RestTemplate restTemplate;
+
+    @Autowired
+    private CityDistrictUpdater cityDistrictUpdater;
 
     /**
      * 환경부 EV 충전기 OpenAPI 호출
@@ -60,6 +65,7 @@ public class EnvEvChargerClient {
                         (res.getItems() == null ? "items=null" : res.getItems().size())
         );
 
+        cityDistrictUpdater.updateCityDistrict();
         return res;
     }
 }
