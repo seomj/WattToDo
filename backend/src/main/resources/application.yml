@@ -1,6 +1,10 @@
 spring:
   application:
     name: backend
+  ai:
+    openai:
+      api-key: ${GMS_API_KEY}
+      base-url: https://gms.ssafy.io/gmsapi/api.openai.com
 
   datasource:
     url: jdbc:mysql://localhost:3306/wtd_db?serverTimezone=UTC&characterEncoding=UTF-8
