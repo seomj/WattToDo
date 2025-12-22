@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
 import KakaoMap from '../components/KakaoMap.vue';
 import StationDetailModal from '../components/StationDetailModal.vue';
 
@@ -10,18 +9,19 @@ const selectedStation = ref(null);
 
 const handleSearch = () => {
     console.log("Searching for:", searchQuery.value);
-    // Future: Implement search functionality
 };
 
 const handleMarkerClick = async (stationId) => {
     try {
         console.log("Fetching detail for:", stationId);
-        const response = await axios.get(`http://localhost:8080/stations/${stationId}`);
-        if(response.data.success) {
-            selectedStation.value = response.data.data;
+        const response = await fetch(`http://localhost:8080/stations/${stationId}`);
+        const result = await response.json();
+        
+        if(result.success) {
+            selectedStation.value = result.data;
             showDetailModal.value = true;
         } else {
-            console.error("Failed to fetch:", response.data.message);
+            console.error("Failed to fetch:", result.message);
         }
     } catch (error) {
         console.error("Failed to fetch detail:", error);
