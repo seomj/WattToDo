@@ -20,7 +20,6 @@ import org.gavaghan.geodesy.GlobalCoordinates;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -52,10 +51,18 @@ public class RecordService {
             throw new IllegalArgumentException("이미 다른 충전소에서 충전 중입니다.");
         }
 
+        // 디버깅: 요청된 station_id 출력
+        System.out.println("=== DEBUG: Requested station_id = [" + request.getStationId() + "]");
+
         Station selectedStation = stationRepository.findById(request.getStationId());
+
+        // 디버깅: 조회 결과 출력
+        System.out.println(
+                "=== DEBUG: Found station = " + (selectedStation == null ? "NULL" : selectedStation.getStationId()));
+
         // 충전소 확인
         if (selectedStation == null) {
-            throw new IllegalArgumentException("선택된 충전소를 찾을 수 없습니다.");
+            throw new IllegalArgumentException("선택된 충전소를 찾을 수 없습니다. station_id: " + request.getStationId());
         }
 
         // 30m 허용 오차를 적용하여 위치 동일성 확인
@@ -87,14 +94,14 @@ public class RecordService {
         double distance = geoCalc.calculateGeodeticCurve(
                 reference,
                 stationCoord,
-                userCoord
-        ).getEllipsoidalDistance(); // 반환 값은 미터(m) 단위입니다.
+                userCoord).getEllipsoidalDistance(); // 반환 값은 미터(m) 단위입니다.
 
         return distance <= ALLOWED_DISTANCE_METERS;
     }
 
     /**
      * DTO를 Model로 변환하고 충전 시작 초기 데이터를 기록합니다.
+     * 
      * @param request 클라이언트로부터 받은 충전 시작 요청 DTO (ChargeStartReq)
      * @return DB 저장을 위한 ChargeRecord Model 객체
      */
@@ -240,12 +247,12 @@ public class RecordService {
 
         // DB 업데이트
         recordRepository.updateRecord(
-                recordId,                       // 1. recordId
-                "COMPLETED",                    // 2. status
-                request.getChargedKwh(),        // 3. chargedKwh (float)
-                endTime,                        // 4. endTime (LocalDateTime)
-                durationMin,                    // 5. durationMin (float)
-                request.getChargingCost()       // 6. chargingCost (int)
+                recordId, // 1. recordId
+                "COMPLETED", // 2. status
+                request.getChargedKwh(), // 3. chargedKwh (float)
+                endTime, // 4. endTime (LocalDateTime)
+                durationMin, // 5. durationMin (float)
+                request.getChargingCost() // 6. chargingCost (int)
         );
 
         // 탄소 절감량 계산 및 저장
@@ -271,7 +278,8 @@ public class RecordService {
      * 00:12:50 또는 16:35 포맷을 float 형태의 '분'으로 변환
      */
     private float calculateDurationMinutes(String durationText) {
-        if (durationText == null || !durationText.contains(":")) return 0.0f;
+        if (durationText == null || !durationText.contains(":"))
+            return 0.0f;
 
         String[] parts = durationText.split(":");
         int totalSeconds = 0;
@@ -280,7 +288,8 @@ public class RecordService {
             if (parts.length == 2) { // mm:ss
                 totalSeconds = (Integer.parseInt(parts[0]) * 60) + Integer.parseInt(parts[1]);
             } else if (parts.length == 3) { // hh:mm:ss
-                totalSeconds = (Integer.parseInt(parts[0]) * 3600) + (Integer.parseInt(parts[1]) * 60) + Integer.parseInt(parts[2]);
+                totalSeconds = (Integer.parseInt(parts[0]) * 3600) + (Integer.parseInt(parts[1]) * 60)
+                        + Integer.parseInt(parts[2]);
             }
         } catch (NumberFormatException e) {
             return 0.0f;

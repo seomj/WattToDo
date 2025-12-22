@@ -6,7 +6,7 @@
     <select id="findById" parameterType="java.lang.String" resultType="com.ssafy.wtd.backend.model.Station">
         SELECT station_id AS stationId, station_name AS stationName, address, lat, lng, city, district
         FROM charging_station
-        WHERE station_id = #{stationId}
+        WHERE TRIM(station_id) = TRIM(#{stationId})
     </select>
 
     <!-- 지역별 검색 (city, district) -->

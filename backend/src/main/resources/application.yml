@@ -1,6 +1,14 @@
 spring:
   application:
     name: backend
+  ai:
+    openai:
+      api-key: ${GMS_API_KEY}
+      base-url: https://gms.ssafy.io/gmsapi/api.openai.com
+      chat:
+        options:
+          model: o3-mini
+          temperature: 1.0
 
   datasource:
     url: jdbc:mysql://localhost:3306/wtd_db?serverTimezone=UTC&characterEncoding=UTF-8
@@ -30,3 +38,15 @@ clova:
 ev:
   charger:
     key: ${EV_CHARGER_KEY}
+
+weather:
+  api:
+    key: ${WEATHER_API_KEY}
+
+logging:
+  level:
+    com:
+      ssafy:
+        wtd:
+          backend:
+            repository=TRACE:

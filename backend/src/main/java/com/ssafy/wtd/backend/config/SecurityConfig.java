@@ -71,7 +71,7 @@ public class SecurityConfig {
                         /* =========================
                          * 테스트를 위한 임시 허용
                          * ========================= */
-                        .requestMatchers("/api/v1/health").permitAll()
+                        .requestMatchers("/api/v1/health", "/api/v1/**").permitAll()
 
                         /* =========================
                          * Swagger (허용)
