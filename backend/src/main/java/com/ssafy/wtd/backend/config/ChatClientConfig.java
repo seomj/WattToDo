@@ -29,7 +29,6 @@ public class ChatClientConfig {
             // Cloudflare 보안 검사를 통과하기 위한 헤더
             request.getHeaders().set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             request.getHeaders().set("Accept", "application/json");
-            request.getHeaders().set("Accept-Encoding", "gzip, deflate, br");
             request.getHeaders().set("Connection", "keep-alive");
             return execution.execute(request, body);
         };

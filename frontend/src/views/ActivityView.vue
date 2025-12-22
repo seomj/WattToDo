@@ -1,11 +1,14 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import ActivityDetailModal from '../components/ActivityDetailModal.vue'
 import MapModal from '../components/MapModal.vue'
+import { getRecommendations, getEstimatedTime } from '../api/activity'
 
 const isExpandedSearch = ref(false)
 const recommendations = ref([])
 const hasSearched = ref(false)
+const isLoading = ref(false)
+const errorMessage = ref('')
 
 // Filter State
 const chargeTime = ref(30)
@@ -17,66 +20,155 @@ const personnel = ref(1)
 const selectedPurpose = ref([])
 const selectedPreference = ref([])
 
+// User Location
+const userLocation = ref({ lat: 37.5547, lng: 126.9707 }) // Default: Seoul Station
+const isLocating = ref(false)
+const locationDisplayName = ref('내 위치 확인 중...')
+
+/**
+ * Get current location coordinates as a Promise
+ */
+const fetchCoordinates = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation not supported'))
+      return
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => reject(err),
+      { timeout: 10000 }
+    )
+  })
+}
+
+/**
+ * Convert coordinates to human-readable address using Kakao Maps
+ */
+const updateLocationName = (lat, lng) => {
+  if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+    locationDisplayName.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    return
+  }
+
+  const geocoder = new kakao.maps.services.Geocoder()
+  geocoder.coord2Address(lng, lat, (result, status) => {
+    if (status === kakao.maps.services.Status.OK) {
+      const addr = result[0].address
+      locationDisplayName.value = `${addr.region_1depth_name} ${addr.region_2depth_name} ${addr.region_3depth_name} 인근`
+    } else {
+      locationDisplayName.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    }
+  })
+}
+
+/**
+ * Main function to refresh user location
+ */
+const refreshLocation = async () => {
+  isLocating.value = true
+  try {
+    const coords = await fetchCoordinates()
+    userLocation.value = coords
+    updateLocationName(coords.lat, coords.lng)
+  } catch (error) {
+    console.warn('Geolocation failed:', error)
+    locationDisplayName.value = '서울역 (기본 위치)'
+    userLocation.value = { lat: 37.5547, lng: 126.9707 }
+  } finally {
+    isLocating.value = false
+  }
+}
+
+// Emoji Mapping
+const emojiMap = {
+  cafe: '☕',
+  park: '🌲',
+  restaurant: '🍴',
+  library: '📚',
+  shopping: '🛍️',
+  gym: '👟',
+  culture: '🎨',
+  nature: '🌿',
+  walk: '👟',
+  store: '🏪'
+}
+
+const getEmoji = (key) => emojiMap[key?.toLowerCase()] || '📍'
+
 // Toggle Search Mode
 const toggleSearch = () => {
   isExpandedSearch.value = !isExpandedSearch.value
 }
 
-// Mock Search Action
-const handleSearch = () => {
+// Fetch Recommendations
+const handleSearch = async () => {
+  // Ensure we have the latest location if it's still default or loading
+  if (isLocating.value) {
+    errorMessage.value = '위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.'
+    return
+  }
+
+  isLoading.value = true
+  errorMessage.value = ''
   hasSearched.value = true
-  // Mock Data
-  recommendations.value = [
-    {
-      id: 1,
-      name: '그린리프 카페',
-      category: '카페',
-      icon: '☕',
-      tags: ['친환경'],
-      desc: '친환경 인테리어와 유기농 원두를 사용하는 조용한 카페입니다. 1인 작업 공간이 잘 마련되어 있습니다.',
-      address: '서울시 강남구 강남대로 398',
-      distance: '350m',
-      walkTime: '도보 5분',
-      hours: '08:00 - 22:00',
-      phone: '02-1234-5678',
-      website: 'www.greenleaf.com',
-      lat: 37.498095,
-      lng: 127.027610
-    },
-    {
-      id: 2,
-      name: '센트럴 공원',
-      category: '공원',
-      icon: '🌲',
-      tags: ['친환경'],
-      desc: '도심 속 힐링 공간으로 산책로와 벤치가 잘 갖춰져 있습니다. 나무가 많아 조용히 쉬기 좋습니다.',
-      address: '서울시 강남구 테헤란로 152',
-      distance: '420m',
-      walkTime: '도보 6분',
-      hours: '24시간 개방',
-      phone: '-',
-      website: '-',
-      lat: 37.500000,
-      lng: 127.030000
-    },
-    {
-      id: 3,
-      name: '북앤그린 서점',
-      category: '서점',
-      icon: '📚',
-      tags: ['친환경'],
-      desc: '독립 서점으로 환경 도서 큐레이션이 잘되어 있습니다. 조용히 독서할 수 있는 공간이 마련되어 있습니다.',
-      address: '서울시 강남구 역삼로 123',
-      distance: '280m',
-      walkTime: '도보 4분',
-      hours: '10:00 - 20:00',
-      phone: '02-9876-5432',
-      website: 'www.bookngreen.com',
-      lat: 37.495000,
-      lng: 127.025000
+  
+  try {
+    const req = {
+      userId: 1, // Mock user ID
+      latitude: userLocation.value.lat,
+      longitude: userLocation.value.lng,
+      chargingTime: chargeTime.value,
+      ecoFriendly: isEcoFriendly.value,
+      publicTransport: usePublicTransport.value,
+      travelTime: travelTime.value,
+      personCount: personnel.value,
+      purposes: selectedPurpose.value,
+      locations: selectedCategory.value,
+      preferences: selectedPreference.value
     }
-  ]
+
+    const response = await getRecommendations(req)
+    
+    // Map backend response to frontend format
+    recommendations.value = response.recommendations.map((item, index) => ({
+      id: index,
+      name: item.placeName,
+      category: item.category,
+      icon: getEmoji(item.imageUrl),
+      tags: item.isEcoFriendly ? ['친환경'] : [],
+      desc: item.description,
+      address: item.address,
+      distance: `${item.distanceMeter}m`,
+      walkTime: `도보 ${item.travelTimeMin}분`,
+      lat: item.latitude,
+      lng: item.longitude
+    }))
+  } catch (error) {
+    console.error('Failed to get recommendations:', error)
+    errorMessage.value = error.message
+    recommendations.value = []
+  } finally {
+    isLoading.value = false
+  }
 }
+
+// Lifecycle Hooks
+onMounted(async () => {
+  // 1. Get Initial Location
+  refreshLocation()
+
+  // 2. Fetch Estimated Charge Time
+  try {
+    const data = await getEstimatedTime(1) // Mock user ID
+    if (data.estimatedTime) {
+      chargeTime.value = data.estimatedTime
+    }
+  } catch (error) {
+    console.warn('Failed to fetch estimated charge time.')
+  }
+})
 
 // Modal State
 const selectedActivity = ref(null)
@@ -89,7 +181,6 @@ const openDetail = (item) => {
 }
 
 const handleOpenMap = () => {
-  // Use selectedActivity location
   showDetailModal.value = false
   showMapModal.value = true
 }
@@ -226,47 +317,83 @@ const handleOpenMap = () => {
         </div>
       </div>
 
-      <button class="search-btn" @click="handleSearch">
-        🔍 AI 추천 받기
+      <!-- Location Status -->
+      <div class="location-status-bar">
+        <div class="location-info">
+          <span class="loc-icon">📍</span>
+          <span class="loc-text" :class="{ gray: isLocating }">
+            {{ locationDisplayName }}
+          </span>
+          <div v-if="isLocating" class="loc-spinner"></div>
+        </div>
+        <button class="refresh-loc-btn" @click="refreshLocation" :disabled="isLocating">
+          위치 갱신
+        </button>
+      </div>
+
+      <button class="search-btn" @click="handleSearch" :disabled="isLocating || isLoading">
+        <template v-if="isLoading">✨ AI가 장소를 찾는 중...</template>
+        <template v-else>🔍 AI 추천 받기</template>
       </button>
     </div>
 
     <!-- Results Section -->
-    <div v-if="hasSearched" class="results-section">
-      <div class="results-header">
-        <span class="section-title">추천 장소 {{ recommendations.length }}곳</span>
-        <span class="info-text">충전 시간 {{ chargeTime }}분 기준</span>
+    <div v-if="hasSearched && !isLoading" class="results-section">
+      <div v-if="errorMessage" class="error-state">
+        <div class="error-icon">⚠️</div>
+        <p class="error-message">{{ errorMessage }}</p>
+        <button class="retry-btn" @click="handleSearch">다시 시도</button>
       </div>
 
-      <div class="cards-grid">
-        <div v-for="item in recommendations" :key="item.id" class="place-card">
-          <div class="card-top">
-            <div class="icon-area">{{ item.icon }}</div>
-            <div class="text-area">
-              <div class="place-name">
-                {{ item.name }}
-                <span v-if="item.tags.includes('친환경')" class="eco-badge">🌿</span>
+      <template v-else>
+        <div class="results-header">
+          <span class="section-title">추천 장소 {{ recommendations.length }}곳</span>
+          <span class="info-text">충전 시간 {{ chargeTime }}분 기준</span>
+        </div>
+
+        <div v-if="recommendations.length > 0" class="cards-grid">
+          <div v-for="item in recommendations" :key="item.id" class="place-card">
+            <div class="card-top">
+              <div class="icon-area">{{ item.icon }}</div>
+              <div class="text-area">
+                <div class="place-name">
+                  {{ item.name }}
+                  <span v-if="item.tags.includes('친환경')" class="eco-badge">🌿</span>
+                </div>
+                <div class="place-category">{{ item.category }}</div>
               </div>
-              <div class="place-category">{{ item.category }}</div>
+            </div>
+            
+            <p class="description">{{ item.desc }}</p>
+            
+            <div class="meta-info">
+              <span>📍 {{ item.distance }}</span>
+              <span>•</span>
+              <span>🕒 {{ item.walkTime }}</span>
+            </div>
+
+            <div class="card-footer" @click="openDetail(item)">
+              <span>상세 보기</span>
+              <span class="arrow">></span>
             </div>
           </div>
-          
-          <p class="description">{{ item.desc }}</p>
-          
-          <div class="meta-info">
-            <span>📍 {{ item.distance }}</span>
-            <span>•</span>
-            <span>🕒 {{ item.walkTime }}</span>
-          </div>
-
-          <div class="card-footer" @click="openDetail(item)">
-            <span>상세 보기</span>
-            <span class="arrow">></span>
-          </div>
         </div>
-      </div>
+
+        <div v-else class="empty-state">
+          <div class="empty-icon">🏜️</div>
+          <p class="empty-title">추천 장소를 찾지 못했습니다</p>
+          <p class="empty-desc">조건을 변경하여 다시 검색해보세요</p>
+        </div>
+      </template>
     </div>
     
+    <!-- Loading State -->
+    <div v-else-if="isLoading" class="loading-state">
+      <div class="loader"></div>
+      <p class="loading-text">AI가 최적의 장소를 찾고 있습니다...</p>
+      <p class="loading-desc">잠시만 기다려주세요</p>
+    </div>
+
     <!-- Empty State -->
     <div v-else class="empty-state">
       <div class="empty-icon">✨</div>
@@ -606,6 +733,141 @@ h1 {
 
 .empty-desc {
   color: #9ca3af;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background-color: white;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-weight: 600;
+  color: #374151;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.loading-desc {
+  color: #9ca3af;
+}
+
+/* Error State */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.error-message {
+  color: #ef4444;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+}
+
+.retry-btn {
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background-color: #e5e7eb;
+}
+
+/* Location Status Bar */
+.location-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border: 1px dashed #d1d5db;
+}
+
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.loc-text.gray {
+  color: #9ca3af;
+}
+
+.loc-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.refresh-loc-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #6b7280;
+  cursor: pointer;
+  background-color: white;
+  transition: all 0.1s;
+}
+
+.refresh-loc-btn:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.refresh-loc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
 }
 
 /* Responsive */
