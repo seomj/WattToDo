@@ -41,9 +41,7 @@ const isCharging = computed(() => props.user.status === 'CHARGING')
       >
         <span class="icon">🧭</span> 활동
       </a>
-      <a href="#" class="nav-item">
-        <span class="icon">⚡</span> 마이 그린
-      </a>
+
     </nav>
 
     <div class="user-area">
