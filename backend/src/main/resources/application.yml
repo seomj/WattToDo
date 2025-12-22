@@ -3,13 +3,17 @@ spring:
     name: backend
   ai:
     openai:
-      api-key: ${GMS_API_KEY}
+      api-key: ${GMS_API_KEY:default}
       base-url: https://gms.ssafy.io/gmsapi/api.openai.com
+      chat:
+        options:
+          model: o3-mini
+          temperature: 1.0
 
   datasource:
     url: jdbc:mysql://localhost:3306/wtd_db?serverTimezone=UTC&characterEncoding=UTF-8
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 mybatis:
@@ -24,21 +28,25 @@ jwt:
   access-token-expiration: 1800000 # 30분
   refresh-token-expiration: 1209600000 # 14일
 
-gms:
-  base-url: https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions # o3-mini 모델
-  api-key: ${GMS_API_KEY}
-
 clova:
   ocr:
     invoke:
-      url: ${INVOKE_URL}
+      url: ${INVOKE_URL:default}
     secret:
-      key: ${CLOVA_KEY}
+      key: ${CLOVA_KEY:default}
 
 ev:
   charger:
-    key: ${EV_CHARGER_KEY}
+    key: ${EV_CHARGER_KEY:default}
 
 weather:
   api:
-    key: ${WEATHER_API_KEY}
+    key: ${WEATHER_API_KEY:default}
+
+logging:
+  level:
+    com:
+      ssafy:
+        wtd:
+          backend:
+            repository=TRACE:
