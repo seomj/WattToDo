@@ -42,3 +42,7 @@ ev:
 weather:
   api:
     key: ${WEATHER_API_KEY}
+
+kakao:
+  rest-api:
+    key: ${KAKAO_REST_KEY}
