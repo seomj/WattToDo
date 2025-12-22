@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.wtd.backend.repository.CarbonConfigRepository">
+
+    <select id="findLatestConfig" resultType="com.ssafy.wtd.backend.model.CarbonConfig">
+        SELECT
+        gasoline_co2_per_l,
+        avg_fuel_efficiency,
+        ev_co2_per_kwh
+        FROM carbon_config
+        ORDER BY updated_at DESC
+        LIMIT 1
+    </select>
+
+</mapper>

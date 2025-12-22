@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.wtd.backend.repository.station.StationDetailRepository">
+
+    <!-- 충전소 기본 정보 -->
+    <select id="findStationInfo"
+            parameterType="string"
+            resultType="com.ssafy.wtd.backend.dto.station.StationDetailDto">
+
+        SELECT
+        station_id   AS stationId,
+        station_name AS stationName,
+        address      AS address,
+        lat           AS lat,
+        lng           AS lng
+        FROM charging_station
+        WHERE station_id = #{stationId}
+
+    </select>
+
+    <!-- 충전소에 속한 충전기 목록 -->
+    <select id="findChargersByStationId"
+            parameterType="string"
+            resultType="com.ssafy.wtd.backend.dto.station.ChargerSummaryDto">
+
+        SELECT
+        charger_id   AS chargerId,
+        charger_name AS chargerName,
+        charge_type  AS chargeType,
+        status       AS status
+        FROM charger
+        WHERE station_id = #{stationId}
+
+    </select>
+
+</mapper>

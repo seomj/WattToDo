@@ -1,0 +1,99 @@
+package com.ssafy.wtd.backend.security;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/auth/")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.equals("/api/v1/health");
+    }
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
+
+        // 1. Authorization 헤더 추출
+        String authHeader = request.getHeader("Authorization");
+
+        // Authorization 헤더가 없거나 Bearer 토큰이 아니면 그냥 통과
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 2. "Bearer " 제거 후 JWT 추출
+        String jwt = authHeader.substring(7);
+
+        // 3. JWT에서 사용자 식별 정보 추출 (보통 email)
+        String email = jwtUtil.extractEmail(jwt);
+
+        // 이미 인증된 경우 다시 인증하지 않음
+        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            // 4. DB에서 사용자 정보 로드
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+            // DISABLED 사용자 차단
+            if (userDetails instanceof CustomUserDetails customUser) {
+                if ("DISABLED".equalsIgnoreCase(customUser.getStatus())) {
+
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write(
+                            "{\"success\":false,\"message\":\"비활성화된 사용자입니다.\"}"
+                    );
+
+                    return; // 절대 다음 필터로 넘기지 않음
+                }
+            }
+
+            // 5. JWT 유효성 검증 (서명 + 만료 + 사용자 일치)
+            if (jwtUtil.isTokenValid(jwt, userDetails)) {
+
+                // 6. 인증 객체 생성
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,      // principal
+                                null,             // credentials (JWT라서 null)
+                                userDetails.getAuthorities()
+                        );
+
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+
+                // 7. SecurityContext에 등록 (핵심)
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        }
+
+        // 8. 다음 필터로 요청 전달
+        filterChain.doFilter(request, response);
+    }
+}

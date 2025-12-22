@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.wtd.backend.repository.station.ChargerRepository">
+
+    <!--
+        charger upsert
+        기준: charger_id (PK)
+    -->
+    <insert id="saveOrUpdate">
+        INSERT INTO charger (
+        charger_id,
+        station_id,
+        charger_name,
+        status,
+        charge_type
+        )
+        VALUES (
+        #{chargerId},
+        #{stationId},
+        #{chargerName},
+        #{status},
+        #{chargeType}
+        )
+        ON DUPLICATE KEY UPDATE
+        charger_name = VALUES(charger_name),
+        status       = VALUES(status),
+        charge_type  = VALUES(charge_type)
+    </insert>
+
+</mapper>
