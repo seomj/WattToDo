@@ -45,29 +45,24 @@ const emit = defineEmits(['close', 'openmap'])
         </section>
 
         <div class="info-grid">
-          <div class="info-card">
+          <div class="info-card wide">
             <span class="label">📍 위치</span>
             <div class="value-block">
-              <span>{{ activity.address }}</span>
+              <span class="address-text">{{ activity.address }}</span>
               <span class="sub-text">{{ activity.distance }} • {{ activity.walkTime }}</span>
-            </div>
-          </div>
-          <div class="info-card">
-            <span class="label">🕒 운영 시간</span>
-            <div class="value-block">
-              <span>{{ activity.hours }}</span>
             </div>
           </div>
           <div class="info-card">
             <span class="label">📞 전화번호</span>
             <div class="value-block">
-              <span>{{ activity.phone }}</span>
+              <span>{{ activity.phone || '정보 없음' }}</span>
             </div>
           </div>
           <div class="info-card">
             <span class="label">🌐 웹사이트</span>
             <div class="value-block">
-              <a href="#" class="link">{{ activity.website }}</a>
+              <a v-if="activity.placeUrl" :href="activity.placeUrl" target="_blank" class="link">카카오맵에서 보기</a>
+              <span v-else>정보 없음</span>
             </div>
           </div>
         </div>
@@ -201,6 +196,10 @@ p {
   border-radius: 12px;
 }
 
+.info-card.wide {
+  grid-column: span 2;
+}
+
 .label {
   display: block;
   font-size: 0.85rem;
@@ -215,6 +214,12 @@ p {
   font-weight: 500;
   color: #1f2937;
   font-size: 0.95rem;
+  word-break: keep-all;
+}
+
+.address-text {
+  line-height: 1.4;
+  color: #1f2937;
 }
 
 .sub-text {

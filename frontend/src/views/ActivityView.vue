@@ -18,7 +18,7 @@ const selectedCategory = ref([])
 const usePublicTransport = ref(false)
 const personnel = ref(1)
 const selectedPurpose = ref([])
-const selectedPreference = ref([])
+const selectedPreference = ref('')
 
 // User Location
 const userLocation = ref({ lat: 37.5547, lng: 126.9707 }) // Default: Seoul Station
@@ -143,7 +143,9 @@ const handleSearch = async () => {
       distance: `${item.distanceMeter}m`,
       walkTime: `도보 ${item.travelTimeMin}분`,
       lat: item.latitude,
-      lng: item.longitude
+      lng: item.longitude,
+      phone: item.phone,
+      placeUrl: item.placeUrl
     }))
   } catch (error) {
     console.error('Failed to get recommendations:', error)
@@ -271,7 +273,7 @@ const handleOpenMap = () => {
                <label>🎯 목적</label>
                <div class="chip-group">
                  <button 
-                   v-for="purp in ['휴식', '식사', '공부', '운동', '쇼핑', '관광']" 
+                   v-for="purp in ['업무/공부', '휴식', '식사', '운동', '쇼핑', '관광']" 
                    :key="purp"
                    class="chip"
                    :class="{ active: selectedPurpose.includes(purp) }"
@@ -300,18 +302,13 @@ const handleOpenMap = () => {
 
             <!-- Row 4: Preference -->
             <div class="filter-group full-width">
-               <label>✨ 선호도</label>
-               <div class="chip-group">
-                 <button 
-                   v-for="pref in ['조용한 곳', '사람 적은 곳', '빠르게 다녀올 곳', '넓은 공간', '실내', '실외']" 
-                   :key="pref"
-                   class="chip"
-                   :class="{ active: selectedPreference.includes(pref) }"
-                   @click="selectedPreference.includes(pref) ? selectedPreference = selectedPreference.filter(p => p !== pref) : selectedPreference.push(pref)"
-                 >
-                   {{ pref }}
-                 </button>
-               </div>
+               <label>✨ 상세 선호도 (직접 입력)</label>
+               <input 
+                 type="text" 
+                 v-model="selectedPreference" 
+                 placeholder="예: 조용하고 사람이 적은 곳, 힙한 카페 등"
+                 class="preference-input"
+               />
             </div>
           </div>
         </div>
@@ -367,9 +364,15 @@ const handleOpenMap = () => {
             <p class="description">{{ item.desc }}</p>
             
             <div class="meta-info">
-              <span>📍 {{ item.distance }}</span>
-              <span>•</span>
-              <span>🕒 {{ item.walkTime }}</span>
+              <div class="meta-item">
+                <span>📍</span>
+                <span>{{ item.distance }}</span>
+              </div>
+              <span class="dot">•</span>
+              <div class="meta-item">
+                <span>🕒</span>
+                <span>{{ item.walkTime }}</span>
+              </div>
             </div>
 
             <div class="card-footer" @click="openDetail(item)">
@@ -585,6 +588,24 @@ h1 {
   border-color: #0055d4;
 }
 
+.preference-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  font-size: 1rem;
+  color: #1f2937;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.preference-input:focus {
+  border-color: #0055d4;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(0, 85, 212, 0.1);
+}
+
 .search-btn {
   width: 100%;
   background-color: #0055d4;
@@ -623,7 +644,7 @@ h1 {
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
+  gap: 2rem; /* Increased gap to prevent overlap */
 }
 
 .place-card {
@@ -633,7 +654,13 @@ h1 {
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.place-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 .card-top {
@@ -687,26 +714,44 @@ h1 {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  height: 3rem; /* Fixed height for consistency */
 }
 
 .meta-info {
-  margin-top: auto;
   color: #6b7280;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dot {
+  color: #d1d5db;
 }
 
 .card-footer {
+  margin-top: auto;
   border-top: 1px solid #f3f4f6;
   padding-top: 1rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   color: #3b82f6;
   font-weight: 600;
   cursor: pointer;
   font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.card-footer:hover {
+  color: #2563eb;
+  text-decoration: underline;
 }
 
 /* Empty State */
