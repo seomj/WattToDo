@@ -1,3 +1,4 @@
+<script setup>
 import { ref, computed, onMounted } from 'vue';
 import Header from './components/Header.vue';
 import MapView from './views/MapView.vue';
