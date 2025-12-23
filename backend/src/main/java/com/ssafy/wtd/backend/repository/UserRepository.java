@@ -11,7 +11,7 @@ public interface UserRepository {
 
     User findByEmail(@Param("email") String email);
 
-    int updateMyInfo(@Param("userId") Long userId, @Param("name") String name, @Param("nickname") String nickname);
+    int updateMyInfo(@Param("userId") Long userId, @Param("email") String email, @Param("name") String name, @Param("nickname") String nickname);
 
     int updatePassword(@Param("userId") Long userId, @Param("password") String password);
 

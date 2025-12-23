@@ -9,6 +9,7 @@ import MyPageView from './views/MyPageView.vue';
 import axios from 'axios';
 
 const currentView = ref('HOME');
+const targetStationId = ref(null);
 
 // User Data (Initially null = not logged in)
 const user = ref(null);
@@ -24,13 +25,23 @@ const currentComponent = computed(() => {
   }
 });
 
-const handleNavigate = (view) => {
+const handleNavigate = (view, params = null) => {
   currentView.value = view;
+  if (params && params.stationId) {
+    targetStationId.value = params.stationId;
+  } else {
+    targetStationId.value = null;
+  }
 };
 
 const handleLoginSuccess = (userData) => {
     user.value = userData; // Set user data (name, status, etc.)
     currentView.value = 'HOME'; // Redirect home
+};
+
+const handleUpdateUser = (updatedData) => {
+    // Merge updated info into existing user state
+    user.value = { ...user.value, ...updatedData };
 };
 
 const handleLogout = () => {
@@ -39,6 +50,22 @@ const handleLogout = () => {
     user.value = null;
     currentView.value = 'HOME';
 };
+
+const handleWithdrawSuccess = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    user.value = null;
+    currentView.value = 'HOME';
+    alert("회원 탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.");
+};
+
+// Security Guard: Redirect to HOME if user logs out while on a protected page
+import { watch } from 'vue';
+watch(user, (newUser) => {
+    if (!newUser && (currentView.value === 'MYPAGE' || currentView.value === 'ACTIVITY')) {
+        currentView.value = 'HOME';
+    }
+});
 
 // Restore Session on Mount
 onMounted(async () => {
@@ -72,8 +99,12 @@ onMounted(async () => {
       <component 
         :is="currentComponent" 
         :user="user"
+        :target-station-id="targetStationId"
         @login-success="handleLoginSuccess"
         @navigate="handleNavigate"
+        @logout="handleLogout"
+        @withdraw="handleWithdrawSuccess"
+        @update-user="handleUpdateUser"
       />
     </main>
   </div>
@@ -103,7 +134,9 @@ body {
 
 .main-body {
   flex: 1;
-  overflow-y: auto; /* Allow scrolling content */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Children handle their own overflow */
   background-color: #f9fafb;
 }
 

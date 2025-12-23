@@ -92,7 +92,7 @@ public class AuthController {
         refreshTokenRepository.save(tokenEntity);
 
         // 6. 응답
-        return new LoginRes(accessToken, refreshToken, user.getName());
+        return new LoginRes(accessToken, refreshToken, user.getName(), user.getCreatedAt());
     }
 
     @PostMapping("/refresh")

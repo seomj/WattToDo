@@ -31,7 +31,8 @@ const handleLogin = async () => {
             const userData = {
                 name: response.data.name || "사용자", // Access name from payload
                 email: email.value,
-                status: "ACTIVE" // Mock status for now
+                status: "ACTIVE",
+                createdAt: response.data.createdAt
             };
             
             emit('login-success', userData);

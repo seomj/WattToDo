@@ -17,6 +17,7 @@ public class MyInfoService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public MyInfoRes getMyInfo(Long userId) {
         User user = userRepository.findByUserId(userId);
@@ -48,15 +49,33 @@ public class MyInfoService {
             );
         }
 
+        // 1. Email 중복 체크 (이메일이 변경된 경우)
+        if (req.getEmail() != null && !req.getEmail().equals(user.getEmail())) {
+            User existing = userRepository.findByEmail(req.getEmail());
+            if (existing != null) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "이미 사용 중인 이메일입니다."
+                );
+            }
+        }
+
+        // 2. 비밀번호 업데이트 (제공된 경우)
+        if (req.getPassword() != null && !req.getPassword().isEmpty()) {
+            userRepository.updatePassword(userId, passwordEncoder.encode(req.getPassword()));
+        }
+
+        // 3. 기본 정보 업데이트 (email 포함)
         int updated = userRepository.updateMyInfo(
                 userId,
-                req.getName(),
-                req.getNickname()
+                req.getEmail() != null ? req.getEmail() : user.getEmail(),
+                req.getName() != null ? req.getName() : user.getName(),
+                req.getNickname() != null ? req.getNickname() : user.getNickname()
         );
 
         if (updated == 0) {
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
+                    HttpStatus.INTERNAL_SERVER_ERROR,
                     "사용자 정보 수정에 실패했습니다."
             );
         }
@@ -84,6 +103,10 @@ public class MyInfoService {
         refreshTokenRepository.deleteByUserId(userId);
     }
 
-
+    public boolean verifyPassword(Long userId, String plainPassword) {
+        User user = userRepository.findByUserId(userId);
+        if (user == null) return false;
+        return passwordEncoder.matches(plainPassword, user.getPassword());
+    }
 }
 

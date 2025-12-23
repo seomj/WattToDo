@@ -1,15 +1,16 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import axios from 'axios';
 import KakaoMap from '../components/KakaoMap.vue';
 import StationDetailModal from '../components/StationDetailModal.vue';
 
-const props = defineProps(['user']);
+const props = defineProps(['user', 'targetStationId']);
 
 const showDetailModal = ref(false);
 const selectedStation = ref(null);
 const searchResults = ref([]);
 const searchCount = ref(0);
+
 
 // Search State
 const keyword = ref('');
@@ -94,6 +95,13 @@ const handleMarkerClick = async (stationId) => {
         console.error("Failed to fetch detail:", error);
     }
 };
+
+// Auto-open station if targetStationId is provided
+watch(() => props.targetStationId, (newId) => {
+    if (newId) {
+        handleMarkerClick(newId);
+    }
+}, { immediate: true });
 
 const closeDetail = () => {
     showDetailModal.value = false;
@@ -190,8 +198,9 @@ const closeDetail = () => {
 <style scoped>
 .map-view-container {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  flex: 1;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
 }
 

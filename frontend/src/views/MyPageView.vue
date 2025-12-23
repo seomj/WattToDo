@@ -9,12 +9,105 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['navigate', 'logout']);
+const emit = defineEmits(['navigate', 'logout', 'withdraw', 'update-user']);
 
 const vehicle = ref(null);
 const chargeRecords = ref([]);
 const favoriteStations = ref([]);
 const loading = ref(true);
+
+// Edit Profile State
+const showEditModal = ref(false);
+const isVerified = ref(false);
+const verificationPassword = ref('');
+const editForm = ref({
+    email: '',
+    password: ''
+});
+
+const openEditModal = () => {
+    isVerified.value = false;
+    verificationPassword.value = '';
+    editForm.value = {
+        email: props.user?.email || '',
+        password: ''
+    };
+    showEditModal.value = true;
+};
+
+const handleVerifyPassword = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        const response = await axios.post('http://localhost:8080/myinfo/verify-password', 
+            { password: verificationPassword.value },
+            { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+
+        if (response.data.success) {
+            isVerified.value = true;
+        } else {
+            alert("비밀번호가 일치하지 않습니다.");
+        }
+    } catch (error) {
+        console.error("Verification failed:", error);
+        alert(error.response?.data?.message || "인증 중 오류가 발생했습니다.");
+    }
+};
+
+const handleUpdateInfo = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        // Send email and password (update password ONLY if provided)
+        const updateData = {
+            email: editForm.value.email
+        };
+        if (editForm.value.password) {
+            updateData.password = editForm.value.password;
+        }
+
+        const response = await axios.patch('http://localhost:8080/myinfo', updateData, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.data.success) {
+            alert("회원 정보가 수정되었습니다.");
+            emit('update-user', response.data.data);
+            showEditModal.value = false;
+        } else {
+            alert(response.data.message || "수정 실패");
+        }
+    } catch (error) {
+        console.error("Update failed:", error);
+        alert(error.response?.data?.message || "정보 수정 중 오류가 발생했습니다.");
+    }
+};
+
+const handleWithdraw = async () => {
+    if (!confirm("정말 탈퇴하시겠습니까? 탈퇴 후에는 모든 데이터가 삭제되며 복구할 수 없습니다.")) {
+        return;
+    }
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        const response = await axios.delete('http://localhost:8080/myinfo', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.data.success) {
+            emit('withdraw');
+        } else {
+            alert(response.data.message || "탈퇴 실패");
+        }
+    } catch (error) {
+        console.error("Account withdrawal failed:", error);
+        alert("회원 탈퇴 중 오류가 발생했습니다.");
+    }
+};
 
 const fetchMyPageData = async () => {
     loading.value = true;
@@ -49,6 +142,29 @@ const fetchMyPageData = async () => {
     }
 };
 
+const toggleFavorite = async (stationId) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        await axios.post(`http://localhost:8080/favorites/${stationId}`, {}, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        // Refresh the list
+        const fRes = await axios.get('http://localhost:8080/favorites', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        favoriteStations.value = fRes.data;
+    } catch (error) {
+        console.error("Failed to toggle favorite", error);
+    }
+};
+
+const goToStation = (stationId) => {
+    emit('navigate', 'HOME', { stationId });
+};
+
+
 const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -60,12 +176,13 @@ onMounted(fetchMyPageData);
 
 <template>
   <div class="mypage-container">
-    <div class="mypage-header">
-      <h1>마이페이지</h1>
-      <p>계정 정보 및 설정을 관리하세요</p>
-    </div>
+    <div class="mypage-inner">
+      <div class="mypage-header">
+        <h1>마이페이지</h1>
+        <p>계정 정보 및 설정을 관리하세요</p>
+      </div>
 
-    <div class="mypage-content">
+      <div class="mypage-content">
       <!-- Left Column: Profile & Vehicle -->
       <div class="side-column">
         <!-- Profile Card -->
@@ -81,7 +198,6 @@ onMounted(fetchMyPageData);
             <h2 class="user-name">{{ user?.name || '사용자' }}</h2>
             <p class="user-email">{{ user?.email }}</p>
             <p class="join-date">가입일: {{ formatDate(user?.createdAt) }}</p>
-            <button class="text-btn">📝 프로필 수정</button>
           </div>
         </div>
 
@@ -147,10 +263,10 @@ onMounted(fetchMyPageData);
             <h3>❤️ 즐겨찾기 충전소</h3>
           </div>
           <div class="favorites-grid">
-            <div v-for="fav in favoriteStations" :key="fav.stationId" class="fav-item" @click="$emit('navigate', 'HOME')">
+            <div v-for="fav in favoriteStations" :key="fav.stationId" class="fav-item" @click="goToStation(fav.stationId)">
               <div class="fav-top">
                 <span class="fav-name">{{ fav.stationName }}</span>
-                <span class="heart-icon">❤️</span>
+                <span class="heart-icon" @click.stop="toggleFavorite(fav.stationId)" style="cursor: pointer;">❤️</span>
               </div>
               <div class="fav-addr">{{ fav.address }}</div>
             </div>
@@ -166,12 +282,12 @@ onMounted(fetchMyPageData);
              <h3>👤 계정 관리</h3>
           </div>
           <div class="account-actions">
-            <button class="action-item">
+            <button class="action-item" @click="openEditModal">
               <div class="action-left">
-                <span class="icon">🔒</span>
+                <span class="icon">👤</span>
                 <div class="action-text">
-                  <div class="title">비밀번호 변경</div>
-                  <div class="sub">계정 보안을 위해 주기적으로 변경하세요</div>
+                  <div class="title">회원정보 수정</div>
+                  <div class="sub">이메일, 비밀번호 등 회원 정보를 변경하세요</div>
                 </div>
               </div>
               <span class="arrow">></span>
@@ -185,7 +301,7 @@ onMounted(fetchMyPageData);
               </div>
               <span class="arrow">></span>
             </button>
-            <button class="action-item danger">
+            <button class="action-item danger" @click="handleWithdraw">
               <div class="action-left">
                 <span class="icon">🗑️</span>
                 <div class="action-text">
@@ -198,16 +314,208 @@ onMounted(fetchMyPageData);
         </div>
       </div>
     </div>
+    </div>
   </div>
+
+  <!-- Edit Profile Modal -->
+  <Transition name="modal">
+    <div v-if="showEditModal" class="modal-overlay" @click="showEditModal = false">
+      <div class="modal-container" @click.stop>
+        <div class="modal-header">
+          <h2>회원정보 수정</h2>
+          <button class="close-btn" @click="showEditModal = false">&times;</button>
+        </div>
+        
+        <!-- Step 1: Verification -->
+        <div v-if="!isVerified" class="verification-step">
+          <p class="step-desc">회원 정보 보안을 위해 현재 비밀번호를 입력해주세요.</p>
+          <form @submit.prevent="handleVerifyPassword" class="modal-form">
+            <div class="form-group">
+              <label>현재 비밀번호</label>
+              <input type="password" v-model="verificationPassword" required placeholder="비밀번호 입력">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="cancel-btn" @click="showEditModal = false">취소</button>
+              <button type="submit" class="save-btn">확인</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Step 2: Modification -->
+        <div v-else class="modification-step">
+          <p class="step-desc">수정할 이메일과 새 비밀번호를 입력해주세요.</p>
+          <form @submit.prevent="handleUpdateInfo" class="modal-form">
+            <div class="form-group">
+              <label>이메일</label>
+              <input type="email" v-model="editForm.email" required placeholder="example@email.com">
+            </div>
+            
+            <div class="form-group">
+              <label>새 비밀번호</label>
+              <input type="password" v-model="editForm.password" placeholder="변경할 비밀번호 (입력 시 변경됨)">
+              <p class="form-help">비밀번호를 입력하지 않으면 기존 비밀번호가 유지됩니다.</p>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="cancel-btn" @click="showEditModal = false">취소</button>
+              <button type="submit" class="save-btn">정보 수정</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: white;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.step-desc {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  ring: 2px solid #3b82f6;
+}
+
+.form-help {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save-btn {
+  flex: 2;
+  padding: 0.75rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.save-btn:hover {
+  background: #2563eb;
+}
+
+/* Transitions */
+.modal-enter-active, .modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+.modal-enter-from, .modal-leave-to {
+  opacity: 0;
+}
+
 .mypage-container {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 2rem;
+  box-sizing: border-box;
+  background-color: #f9fafb;
+}
+
+.mypage-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  background-color: #f9fafb;
-  min-height: 100%;
 }
 
 .mypage-header {

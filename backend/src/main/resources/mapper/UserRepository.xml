@@ -52,6 +52,7 @@
     <update id="updateMyInfo">
         UPDATE user
         SET
+        email = #{email},
         name = #{name},
         nickname = #{nickname},
         updated_at = NOW()
