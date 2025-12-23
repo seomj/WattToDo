@@ -23,13 +23,10 @@ const handleLogin = async () => {
         });
 
         if (response.data && response.data.accessToken) {
-            // Emit success event with token info or just signal success
-            // In a real app we'd decode the JWT to get user info, but for this demo 
-            // we might mock the user object or fetch profile if an endpoint exists.
-            // Since there is no /me endpoint visible yet, we will mock the user object for now 
-            // OR we can decode it if we had a library.
-            // Let's assume for now we just pass a mock user object on success consistent with "Kim Min-su"
-            
+            // Persist tokens for API authentication
+            localStorage.setItem('accessToken', response.data.accessToken);
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+
             // Checking if we can get user info. The login response has accessToken and name.
             const userData = {
                 name: response.data.name || "사용자", // Access name from payload

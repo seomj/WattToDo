@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue';
+import { ref, watch } from 'vue';
+import axios from 'axios';
 
 const props = defineProps({
   show: Boolean,
@@ -10,6 +11,46 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close']);
+
+const isFavorite = ref(false);
+
+// Check favorite status when station changes
+watch(() => props.station, async (newStation) => {
+    if (newStation && newStation.stationId) {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await axios.get(`http://localhost:8080/api/v1/favorites/${newStation.stationId}/check`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            isFavorite.value = response.data.isFavorite;
+        } catch (error) {
+            console.error("Failed to check favorite status:", error);
+            isFavorite.value = false;
+        }
+    }
+}, { immediate: true });
+
+const toggleFavorite = async () => {
+    if (!props.station) return;
+    
+    try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("로그인이 필요한 기능입니다.");
+            return;
+        }
+
+        const response = await axios.post(`http://localhost:8080/api/v1/favorites/${props.station.stationId}`, {}, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        isFavorite.value = response.data.isFavorite;
+        alert(response.data.message);
+    } catch (error) {
+        console.error("Failed to toggle favorite:", error);
+        alert("즐겨찾기 처리 중 오류가 발생했습니다.");
+    }
+};
 
 // Helper to count available/total chargers by type
 const getChargerCount = (chargers, type) => {
@@ -50,9 +91,10 @@ const getStatusText = (status) => {
             <span class="arrow-icon">←</span>
         </button>
         <h2 class="station-name">{{ station.stationName }}</h2>
-        <button class="icon-btn star-btn">
-             <!-- Empty Star -->
-             <span class="star-icon">☆</span>
+        <button class="icon-btn star-btn" @click="toggleFavorite">
+             <span class="star-icon" :class="{ favorited: isFavorite }">
+                {{ isFavorite ? '★' : '☆' }}
+             </span>
         </button>
       </div>
 
@@ -83,7 +125,6 @@ const getStatusText = (status) => {
         <div class="charger-list-section">
             <div class="list-header">
                 <h3>충전기 정보</h3>
-                <button class="report-btn">고장신고 🚨</button>
             </div>
 
             <div v-for="charger in station.chargers" :key="charger.chargerId" class="charger-card">
@@ -171,6 +212,10 @@ const getStatusText = (status) => {
     font-size: 1.25rem;
     padding: 0.25rem;
     color: #6b7280;
+}
+
+.star-icon.favorited {
+    color: #f59e0b; /* Amber/Yellow for favorited */
 }
 
 /* Info Section */

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.wtd.backend.repository.FavoriteStationRepository">
+
+    <resultMap id="FavoriteStationResultMap" type="com.ssafy.wtd.backend.model.FavoriteStation">
+        <result property="userId" column="user_id"/>
+        <result property="stationId" column="station_id"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.ssafy.wtd.backend.model.FavoriteStation">
+        INSERT INTO favorite_station (user_id, station_id)
+        VALUES (#{userId}, #{stationId})
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM favorite_station
+        WHERE user_id = #{userId} AND station_id = #{stationId}
+    </delete>
+
+    <select id="findByUserAndStation" resultMap="FavoriteStationResultMap">
+        SELECT user_id, station_id
+        FROM favorite_station
+        WHERE user_id = #{userId} AND station_id = #{stationId}
+        LIMIT 1
+    </select>
+
+    <select id="findByUserId" resultMap="FavoriteStationResultMap">
+        SELECT user_id, station_id
+        FROM favorite_station
+        WHERE user_id = #{userId}
+    </select>
+
+</mapper>
