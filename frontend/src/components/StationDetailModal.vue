@@ -7,6 +7,10 @@ const props = defineProps({
   station: {
     type: Object,
     default: null
+  },
+  isLoggedIn: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -14,9 +18,9 @@ const emit = defineEmits(['close']);
 
 const isFavorite = ref(false);
 
-// Check favorite status when station changes
-watch(() => props.station, async (newStation) => {
-    if (newStation && newStation.stationId) {
+// Check favorite status when station or login state changes
+watch([() => props.station, () => props.isLoggedIn], async ([newStation, loggedIn]) => {
+    if (loggedIn && newStation && newStation.stationId) {
         try {
             const token = localStorage.getItem('accessToken');
             const response = await axios.get(`http://localhost:8080/api/v1/favorites/${newStation.stationId}/check`, {
@@ -27,19 +31,21 @@ watch(() => props.station, async (newStation) => {
             console.error("Failed to check favorite status:", error);
             isFavorite.value = false;
         }
+    } else {
+        isFavorite.value = false;
     }
 }, { immediate: true });
 
 const toggleFavorite = async () => {
     if (!props.station) return;
     
+    if (!props.isLoggedIn) {
+        alert("로그인이 필요한 기능입니다.");
+        return;
+    }
+
     try {
         const token = localStorage.getItem('accessToken');
-        if (!token) {
-            alert("로그인이 필요한 기능입니다.");
-            return;
-        }
-
         const response = await axios.post(`http://localhost:8080/api/v1/favorites/${props.station.stationId}`, {}, {
             headers: { 'Authorization': `Bearer ${token}` }
         });

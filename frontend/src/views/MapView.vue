@@ -4,6 +4,8 @@ import axios from 'axios';
 import KakaoMap from '../components/KakaoMap.vue';
 import StationDetailModal from '../components/StationDetailModal.vue';
 
+const props = defineProps(['user']);
+
 const showDetailModal = ref(false);
 const selectedStation = ref(null);
 const searchResults = ref([]);
@@ -178,6 +180,7 @@ const closeDetail = () => {
       <StationDetailModal 
           :show="showDetailModal" 
           :station="selectedStation"
+          :is-logged-in="!!user"
           @close="closeDetail"
       />
     </div>

@@ -81,6 +81,7 @@ const isCharging = computed(() => props.user && props.user.status === 'CHARGING'
                 </svg>
             </div>
             <span class="username">{{ user.name }}</span>
+            <button class="logout-link" @click="$emit('logout')">로그아웃</button>
         </div>
       </template>
     </div>
@@ -230,5 +231,19 @@ const isCharging = computed(() => props.user && props.user.status === 'CHARGING'
   font-size: 1rem;
   font-weight: 600;
   color: #1f2937; /* Darker gray for text */
+}
+
+.logout-link {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-left: 0.25rem;
+}
+
+.logout-link:hover {
+    color: #ef4444;
 }
 </style>

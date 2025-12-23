@@ -17,24 +17,34 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 const mapContainer = ref(null)
 
-// Mock Kakao Map load
+// Kakao Map load
+let map = null;
+let marker = null;
+
 const loadMap = () => {
-  if (!mapContainer.value) return
+  if (!mapContainer.value || !window.kakao || !window.kakao.maps) return
   
-  // In a real implementation:
-  // new kakao.maps.Map(mapContainer.value, options)
-  // For now, we'll just show a placeholder since we don't have an API key
-  mapContainer.value.innerHTML = `
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#6b7280;">
-      <div style="font-size:3rem; margin-bottom:1rem; color:#ef4444;">📍</div>
-      <div style="font-weight:600;">${props.location.name}</div>
-    </div>
-  `
+  const options = {
+    center: new kakao.maps.LatLng(props.location.lat, props.location.lng),
+    level: 3
+  };
+
+  // Create map
+  map = new kakao.maps.Map(mapContainer.value, options);
+
+  // Create marker
+  const markerPosition = new kakao.maps.LatLng(props.location.lat, props.location.lng);
+  marker = new kakao.maps.Marker({
+    position: markerPosition
+  });
+
+  marker.setMap(map);
 }
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
-    setTimeout(loadMap, 100) // Delay for render
+    // Small delay to ensure container is ready and rendered
+    setTimeout(loadMap, 100)
   }
 })
 </script>
@@ -54,21 +64,14 @@ watch(() => props.show, (newVal) => {
         <!-- Map renders here -->
       </div>
 
-      <div class="info-bar">
-        <div class="info-badge">
-          <span class="type">A</span>
-          <span>350m • 도보 5분</span>
-        </div>
-      </div>
-
       <div class="detail-row">
         <div class="detail-item">
           <span class="label">거리</span>
-          <span class="value">350m</span>
+          <span class="value">{{ location.distance }}</span>
         </div>
         <div class="detail-item">
           <span class="label">도보</span>
-          <span class="value">5분</span>
+          <span class="value">{{ location.walkTime }}</span>
         </div>
       </div>
 

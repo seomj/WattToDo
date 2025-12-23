@@ -1,10 +1,10 @@
-<script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Header from './components/Header.vue';
 import MapView from './views/MapView.vue';
 import ActivityView from './views/ActivityView.vue';
 import LoginView from './views/LoginView.vue';
 import SignupView from './views/SignupView.vue';
+import axios from 'axios';
 
 const currentView = ref('HOME');
 
@@ -29,6 +29,32 @@ const handleLoginSuccess = (userData) => {
     user.value = userData; // Set user data (name, status, etc.)
     currentView.value = 'HOME'; // Redirect home
 };
+
+const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    user.value = null;
+    currentView.value = 'HOME';
+};
+
+// Restore Session on Mount
+onMounted(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+        try {
+            const response = await axios.get('http://localhost:8080/myinfo', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.data.success) {
+                user.value = response.data.data;
+            }
+        } catch (error) {
+            console.warn("Session restoration failed:", error);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+        }
+    }
+});
 </script>
 
 <template>
@@ -37,10 +63,12 @@ const handleLoginSuccess = (userData) => {
       :user="user" 
       :current-view="currentView"
       @navigate="handleNavigate"
+      @logout="handleLogout"
     />
     <main class="main-body">
       <component 
         :is="currentComponent" 
+        :user="user"
         @login-success="handleLoginSuccess"
         @navigate="handleNavigate"
       />
