@@ -1,5 +1,6 @@
 package com.ssafy.wtd.backend.controller;
 
+import com.ssafy.wtd.backend.dto.favorite.FavoriteStationDetailDto;
 import com.ssafy.wtd.backend.model.FavoriteStation;
 import com.ssafy.wtd.backend.repository.FavoriteStationRepository;
 import com.ssafy.wtd.backend.repository.UserRepository;
@@ -9,15 +10,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/favorites")
+@RequestMapping("/favorites")
 @RequiredArgsConstructor
 public class FavoriteController {
 
     private final FavoriteStationRepository favoriteStationRepository;
     private final UserRepository userRepository;
+
+    @GetMapping("")
+    public ResponseEntity<?> getMyFavorites(Authentication authentication) {
+        if (authentication == null) return ResponseEntity.status(401).body("로그인이 필요합니다.");
+        
+        User user = userRepository.findByEmail(authentication.getName());
+        if (user == null) return ResponseEntity.status(404).body("사용자를 찾을 수 없습니다.");
+
+        List<FavoriteStationDetailDto> favorites = favoriteStationRepository.findDetailsByUserId(user.getUserId());
+        return ResponseEntity.ok(favorites);
+    }
 
     @PostMapping("/{stationId}")
     public ResponseEntity<?> toggleFavorite(@PathVariable String stationId, Authentication authentication) {

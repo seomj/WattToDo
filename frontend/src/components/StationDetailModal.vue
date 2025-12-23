@@ -23,7 +23,7 @@ watch([() => props.station, () => props.isLoggedIn], async ([newStation, loggedI
     if (loggedIn && newStation && newStation.stationId) {
         try {
             const token = localStorage.getItem('accessToken');
-            const response = await axios.get(`http://localhost:8080/api/v1/favorites/${newStation.stationId}/check`, {
+            const response = await axios.get(`http://localhost:8080/favorites/${newStation.stationId}/check`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             isFavorite.value = response.data.isFavorite;
@@ -46,7 +46,7 @@ const toggleFavorite = async () => {
 
     try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.post(`http://localhost:8080/api/v1/favorites/${props.station.stationId}`, {}, {
+        const response = await axios.post(`http://localhost:8080/favorites/${props.station.stationId}`, {}, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         

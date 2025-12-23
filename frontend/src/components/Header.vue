@@ -72,7 +72,7 @@ const isCharging = computed(() => props.user && props.user.status === 'CHARGING'
             ⚡ 충전 중
         </button>
         
-        <div class="user-profile">
+        <div class="user-profile" @click="$emit('navigate', 'MYPAGE')" style="cursor: pointer;">
             <div class="avatar">
                 <!-- Simple Avatar Icon -->
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

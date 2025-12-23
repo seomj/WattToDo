@@ -32,5 +32,14 @@
         FROM favorite_station
         WHERE user_id = #{userId}
     </select>
+    <select id="findDetailsByUserId" resultType="com.ssafy.wtd.backend.dto.favorite.FavoriteStationDetailDto">
+        SELECT 
+            f.station_id AS stationId,
+            s.station_name AS stationName,
+            s.address AS address
+        FROM favorite_station f
+        JOIN charging_station s ON f.station_id = s.station_id
+        WHERE f.user_id = #{userId}
+    </select>
 
 </mapper>

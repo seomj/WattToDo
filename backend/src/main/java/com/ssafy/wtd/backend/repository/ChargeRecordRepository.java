@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Mapper // MyBatis Mapper 인터페이스임을 명시
 public interface ChargeRecordRepository {
@@ -20,4 +21,5 @@ public interface ChargeRecordRepository {
     ); // 충전 완료 후 최종 데이터 업데이트
     ChargeRecord selectActiveRecordByUserId(Long userId); // 충전 중인 기록을 조회하는 메서드
     ChargeRecord selectRecordById(Long recordId);
+    List<ChargeRecord> findAllByUserId(@Param("userId") Long userId);
 }

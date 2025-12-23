@@ -1,6 +1,7 @@
 package com.ssafy.wtd.backend.repository;
 
 import com.ssafy.wtd.backend.model.FavoriteStation;
+import com.ssafy.wtd.backend.dto.favorite.FavoriteStationDetailDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
@@ -11,4 +12,5 @@ public interface FavoriteStationRepository {
     int delete(@Param("userId") Long userId, @Param("stationId") String stationId);
     FavoriteStation findByUserAndStation(@Param("userId") Long userId, @Param("stationId") String stationId);
     List<FavoriteStation> findByUserId(@Param("userId") Long userId);
+    List<FavoriteStationDetailDto> findDetailsByUserId(@Param("userId") Long userId);
 }

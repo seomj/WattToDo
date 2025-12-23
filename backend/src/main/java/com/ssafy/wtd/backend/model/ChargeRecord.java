@@ -10,6 +10,7 @@ public class ChargeRecord {
     private Long recordId;
     private Long userId;
     private String stationId;
+    private String stationName;
 
     private String status; // 'CHARGING', 'COMPLETED' 상태 관리
 
