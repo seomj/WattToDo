@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
+import axios from 'axios';
 
 const props = defineProps({
   lat: {
@@ -46,14 +47,16 @@ const initMap = () => {
   };
   mapInstance.value = new window.kakao.maps.Map(mapContainer.value, options);
   fetchStations();
+  
+  // Re-center if props change? Maybe not needed for initial load.
 };
 
 const fetchStations = async () => {
   try {
-    const response = await fetch('http://localhost:8080/stations');
-    const result = await response.json();
-    if (result && result.success) {
-      stations.value = result.data;
+    // Assuming backend is running on localhost:8080
+    const response = await axios.get('http://localhost:8080/stations');
+    if (response.data && response.data.success) {
+      stations.value = response.data.data;
       console.log("Stations loaded:", stations.value.length);
       renderMarkers();
     }
@@ -64,21 +67,47 @@ const fetchStations = async () => {
 
 const emit = defineEmits(['marker-click']);
 
+// Marker Images
+const markerImages = {
+    GREEN: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
+    BLUE: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+    GRAY: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // Using Red as 'Busy/Unavailable' or could find a gray one
+    DEFAULT: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+};
+
 const renderMarkers = () => {
+  // Clear existing markers
   markers.value.forEach(marker => marker.setMap(null));
   markers.value = [];
 
   stations.value.forEach(station => {
+    
     const markerPosition = new window.kakao.maps.LatLng(station.lat, station.lng);
+    
+    // Determine Marker Image
+    let imageSrc = '/markers/marker_gray.svg'; // Default/Gray
+    if (station.markerColor === 'GREEN') imageSrc = '/markers/marker_green.svg';
+    else if (station.markerColor === 'BLUE') imageSrc = '/markers/marker_blue.svg';
+    
+    // Create MarkerImage
+    const imageSize = new window.kakao.maps.Size(40, 40); 
+    const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize);
+
+    // Create Marker with image
     const marker = new window.kakao.maps.Marker({
-      position: markerPosition
+      position: markerPosition,
+      image: markerImage,
+      clickable: true // Explicitly enable clicking
     });
+    
     marker.setMap(mapInstance.value);
     
+    // Add click listener
     window.kakao.maps.event.addListener(marker, 'click', function() {
         console.log("Marker clicked:", station.stationId);
         emit('marker-click', station.stationId);
     });
+
     markers.value.push(marker);
   });
 };

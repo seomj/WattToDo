@@ -13,6 +13,10 @@ public interface UserRepository {
 
     int updateMyInfo(@Param("userId") Long userId, @Param("name") String name, @Param("nickname") String nickname);
 
+    int updatePassword(@Param("userId") Long userId, @Param("password") String password);
+
+    int insert(User user);
+
     int disableUser(@Param("userId") Long userId);
 }
 

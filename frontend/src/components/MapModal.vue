@@ -16,34 +16,25 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 const mapContainer = ref(null)
-let map = null
 
-const initMap = () => {
-  if (!mapContainer.value || !window.kakao || !window.kakao.maps) return
+// Mock Kakao Map load
+const loadMap = () => {
+  if (!mapContainer.value) return
   
-  const options = {
-    center: new kakao.maps.LatLng(props.location.lat, props.location.lng),
-    level: 3
-  }
-  
-  map = new kakao.maps.Map(mapContainer.value, options)
-  
-  // 마커 표시
-  const markerPosition = new kakao.maps.LatLng(props.location.lat, props.location.lng)
-  const marker = new kakao.maps.Marker({
-    position: markerPosition
-  })
-  marker.setMap(map)
+  // In a real implementation:
+  // new kakao.maps.Map(mapContainer.value, options)
+  // For now, we'll just show a placeholder since we don't have an API key
+  mapContainer.value.innerHTML = `
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#6b7280;">
+      <div style="font-size:3rem; margin-bottom:1rem; color:#ef4444;">📍</div>
+      <div style="font-weight:600;">${props.location.name}</div>
+    </div>
+  `
 }
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
-    // 모달이 열린 후 맵 초기화 (DOM 렌더링 시간 고려)
-    setTimeout(() => {
-      initMap()
-      // 지도 크기 재조정 (모달 내부에 있을 때 필수)
-      if (map) map.relayout()
-    }, 100)
+    setTimeout(loadMap, 100) // Delay for render
   }
 })
 </script>

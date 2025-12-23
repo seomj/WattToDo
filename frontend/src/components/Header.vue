@@ -4,7 +4,7 @@ import { computed } from 'vue'
 const props = defineProps({
   user: {
     type: Object,
-    required: true
+    default: null
   },
   currentView: {
     type: String,
@@ -14,7 +14,7 @@ const props = defineProps({
 
 const emit = defineEmits(['open-charging-modal', 'navigate'])
 
-const isCharging = computed(() => props.user.status === 'CHARGING')
+const isCharging = computed(() => props.user && props.user.status === 'CHARGING')
 </script>
 
 <template>
@@ -44,19 +44,45 @@ const isCharging = computed(() => props.user.status === 'CHARGING')
 
     </nav>
 
+
     <div class="user-area">
+      <!-- Not Logged In -->
       <button 
-        v-if="isCharging" 
-        class="charging-status-btn"
-        @click="$emit('open-charging-modal')"
+        v-if="!user" 
+        class="login-btn"
+        @click="$emit('navigate', 'LOGIN')"
       >
-        ⚡ 충전 중
+        로그인
       </button>
-      
-      <div class="user-profile">
-        <div class="avatar">👤</div>
-        <span class="username">{{ user.name }}</span>
-      </div>
+      <button 
+        v-if="!user" 
+        class="signup-btn"
+        @click="$emit('navigate', 'SIGNUP')"
+      >
+        회원가입
+      </button>
+
+      <!-- Logged In -->
+      <template v-else>
+        <button 
+            v-if="isCharging" 
+            class="charging-status-btn"
+            @click="$emit('open-charging-modal')"
+        >
+            ⚡ 충전 중
+        </button>
+        
+        <div class="user-profile">
+            <div class="avatar">
+                <!-- Simple Avatar Icon -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </div>
+            <span class="username">{{ user.name }}</span>
+        </div>
+      </template>
     </div>
   </header>
 </template>
@@ -131,6 +157,39 @@ const isCharging = computed(() => props.user.status === 'CHARGING')
   gap: 1.5rem;
 }
 
+.login-btn {
+    background-color: #3b82f6; /* Blue Primary */
+    color: white;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login-btn:hover {
+    background-color: #2563eb;
+}
+
+.signup-btn {
+    background-color: white;
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 0.5rem;
+}
+
+.signup-btn:hover {
+    background-color: #eff6ff;
+}
+
 .charging-status-btn {
   display: flex;
   align-items: center;
@@ -153,24 +212,23 @@ const isCharging = computed(() => props.user.status === 'CHARGING')
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background-color: #3b82f6;
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
 }
 
 .username {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937; /* Darker gray for text */
 }
 </style>

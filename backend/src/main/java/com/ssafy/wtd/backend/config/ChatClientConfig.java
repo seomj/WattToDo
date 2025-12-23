@@ -26,18 +26,11 @@ public class ChatClientConfig {
     @Bean
     public ClientHttpRequestInterceptor cloudflareHeaderInterceptor() {
         return (request, body, execution) -> {
-            String host = request.getURI().getHost();
-
-            // Cloudflare 보안 검사를 통과하기 위한 기본 헤더
+            // Cloudflare 보안 검사를 통과하기 위한 헤더
             request.getHeaders().set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             request.getHeaders().set("Accept", "application/json");
+            request.getHeaders().set("Accept-Encoding", "gzip, deflate, br");
             request.getHeaders().set("Connection", "keep-alive");
-
-            // GMS 프록시(Cloudflare)는 특정 인코딩 헤더가 없을 시 502 에러를 뱉을 수 있음
-            if (host != null && host.contains("gms.ssafy.io")) {
-                request.getHeaders().set("Accept-Encoding", "gzip, deflate, br");
-            }
-
             return execution.execute(request, body);
         };
     }

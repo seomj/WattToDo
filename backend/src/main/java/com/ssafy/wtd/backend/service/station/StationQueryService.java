@@ -18,8 +18,7 @@ public class StationQueryService {
      */
     public List<StationMarkerDto> getAllStationMarkers() {
 
-        List<StationMarkerDto> stations =
-                stationQueryRepository.findAllStationMarkers();
+        List<StationMarkerDto> stations = stationQueryRepository.findAllStationMarkers();
 
         applyMarkerColor(stations);
         return stations;
@@ -31,8 +30,7 @@ public class StationQueryService {
     public List<StationMarkerDto> getNearbyStationMarkers(
             double lat,
             double lng,
-            int radius
-    ) {
+            int radius) {
 
         // 대략적인 위경도 거리 환산 (미터 기준)
         double latOffset = radius / 111_000.0;
@@ -43,10 +41,8 @@ public class StationQueryService {
         double minLng = lng - lngOffset;
         double maxLng = lng + lngOffset;
 
-        List<StationMarkerDto> stations =
-                stationQueryRepository.findNearbyStationMarkers(
-                        minLat, maxLat, minLng, maxLng
-                );
+        List<StationMarkerDto> stations = stationQueryRepository.findNearbyStationMarkers(
+                minLat, maxLat, minLng, maxLng);
 
         applyMarkerColor(stations);
         return stations;
@@ -57,11 +53,18 @@ public class StationQueryService {
      */
     public List<StationMarkerDto> getStationsByCityAndDistrict(
             String city,
-            String district
-    ) {
-        List<StationMarkerDto> stations =
-                stationQueryRepository.findByCityAndDistrict(city, district);
+            String district) {
+        List<StationMarkerDto> stations = stationQueryRepository.findByCityAndDistrict(city, district);
 
+        applyMarkerColor(stations);
+        return stations;
+    }
+
+    /**
+     * 키워드 검색 (이름, 주소)
+     */
+    public List<StationMarkerDto> getStationsByKeyword(String keyword) {
+        List<StationMarkerDto> stations = stationQueryRepository.findByKeyword(keyword);
         applyMarkerColor(stations);
         return stations;
     }

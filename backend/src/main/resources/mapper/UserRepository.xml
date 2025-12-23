@@ -68,5 +68,35 @@
         AND status = 'ACTIVE'
     </update>
 
+    <update id="updatePassword">
+        UPDATE user
+        SET
+        password = #{password},
+        updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <insert id="insert" parameterType="com.ssafy.wtd.backend.model.User" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO user (
+            email,
+            password,
+            name,
+            nickname,
+            role,
+            status,
+            created_at,
+            updated_at
+        ) VALUES (
+            #{email},
+            #{password},
+            #{name},
+            #{nickname},
+            #{role},
+            #{status},
+            NOW(),
+            NOW()
+        )
+    </insert>
+
 
 </mapper>
