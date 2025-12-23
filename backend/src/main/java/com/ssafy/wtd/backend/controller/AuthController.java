@@ -30,6 +30,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public LoginRes login(@RequestBody LoginReq request) {
@@ -49,6 +50,18 @@ public class AuthController {
                     HttpStatus.UNAUTHORIZED,
                     "비활성화된 계정입니다."
             );
+        }
+
+        // 1.5 Legacy Password Migration (Plain Text -> BCrypt)
+        // If password is NOT BCrypt encoded (e.g. plain text "1234"), matches() will likely fail or return false.
+        // We check if it matches literally as a string.
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            // If it matches plain text, update it to BCrypt
+            if (user.getPassword().equals(request.getPassword())) {
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+                userRepository.updatePassword(user.getUserId(), user.getPassword());
+                // System.out.println("Migrated plain text password for user: " + user.getEmail());
+            }
         }
 
         // 2. 인증
@@ -79,7 +92,7 @@ public class AuthController {
         refreshTokenRepository.save(tokenEntity);
 
         // 6. 응답
-        return new LoginRes(accessToken, refreshToken);
+        return new LoginRes(accessToken, refreshToken, user.getName());
     }
 
     @PostMapping("/refresh")
@@ -89,4 +102,23 @@ public class AuthController {
         return new RefreshTokenRes(newAccessToken);
     }
 
+    @PostMapping("/signup")
+    public void signup(@RequestBody com.ssafy.wtd.backend.dto.auth.SignupReq request) {
+        // 1. Check duplicate
+        if (userRepository.findByEmail(request.getEmail()) != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다.");
+        }
+
+        // 2. Create User
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setName(request.getName());
+        user.setPassword(passwordEncoder.encode(request.getPassword())); // Encrypt Password
+        user.setStatus("ACTIVE");
+        user.setRole("USER");
+        user.setNickname(request.getName()); // Set default nickname to name
+
+        // 3. Save
+        userRepository.insert(user);
+    }
 }

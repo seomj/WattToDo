@@ -3,25 +3,31 @@ import { ref, computed } from 'vue';
 import Header from './components/Header.vue';
 import MapView from './views/MapView.vue';
 import ActivityView from './views/ActivityView.vue';
+import LoginView from './views/LoginView.vue';
+import SignupView from './views/SignupView.vue';
 
 const currentView = ref('HOME');
 
-// Mock User Data
-const user = ref({
-  name: '김민수',
-  status: 'CHARGING'
-});
+// User Data (Initially null = not logged in)
+const user = ref(null);
 
 const currentComponent = computed(() => {
   switch (currentView.value) {
     case 'HOME': return MapView;
     case 'ACTIVITY': return ActivityView;
+    case 'LOGIN': return LoginView;
+    case 'SIGNUP': return SignupView;
     default: return MapView;
   }
 });
 
 const handleNavigate = (view) => {
   currentView.value = view;
+};
+
+const handleLoginSuccess = (userData) => {
+    user.value = userData; // Set user data (name, status, etc.)
+    currentView.value = 'HOME'; // Redirect home
 };
 </script>
 
@@ -33,7 +39,11 @@ const handleNavigate = (view) => {
       @navigate="handleNavigate"
     />
     <main class="main-body">
-      <component :is="currentComponent" />
+      <component 
+        :is="currentComponent" 
+        @login-success="handleLoginSuccess"
+        @navigate="handleNavigate"
+      />
     </main>
   </div>
 </template>
