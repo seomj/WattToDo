@@ -84,24 +84,20 @@ const renderMarkers = () => {
     
     const markerPosition = new window.kakao.maps.LatLng(station.lat, station.lng);
     
-<<<<<<< Updated upstream
-    // Default Marker (No custom image) to ensure clickability
-=======
-    // 마커 이미지 설정 (SVG 사용)
-    let imageSrc = '/markers/marker_gray.svg'; // 기본값 (운영 중지/기타)
-    if (station.markerColor === 'GREEN') {
-        imageSrc = '/markers/marker_green.svg';
-    } else if (station.markerColor === 'BLUE') {
-        imageSrc = '/markers/marker_blue.svg';
-    }
-
-    const imageSize = new window.kakao.maps.Size(40, 40); // 마커 이미지의 크기
+    // Determine Marker Image
+    let imageSrc = '/markers/marker_gray.svg'; // Default/Gray
+    if (station.markerColor === 'GREEN') imageSrc = '/markers/marker_green.svg';
+    else if (station.markerColor === 'BLUE') imageSrc = '/markers/marker_blue.svg';
+    
+    // Create MarkerImage
+    const imageSize = new window.kakao.maps.Size(40, 40); 
     const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize);
 
->>>>>>> Stashed changes
+    // Create Marker with image
     const marker = new window.kakao.maps.Marker({
       position: markerPosition,
-      image: markerImage // 마커 이미지 설정
+      image: markerImage,
+      clickable: true // Explicitly enable clicking
     });
     
     marker.setMap(mapInstance.value);

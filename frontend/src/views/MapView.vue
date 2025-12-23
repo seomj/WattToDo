@@ -1,10 +1,6 @@
 <script setup>
-<<<<<<< Updated upstream
-import { ref } from 'vue';
-import axios from 'axios';
-=======
 import { computed, ref } from 'vue';
->>>>>>> Stashed changes
+import axios from 'axios';
 import KakaoMap from '../components/KakaoMap.vue';
 import StationDetailModal from '../components/StationDetailModal.vue';
 
@@ -13,11 +9,6 @@ const selectedStation = ref(null);
 const searchResults = ref([]);
 const searchCount = ref(0);
 
-<<<<<<< Updated upstream
-const handleSearch = () => {
-    console.log("Searching for:", searchQuery.value);
-    // Future: Implement search functionality
-=======
 // Search State
 const keyword = ref('');
 const selectedCity = ref('');
@@ -25,7 +16,6 @@ const selectedDistrict = ref('');
 
 // Region Data
 const koreaRegions = {
-    // ... (Code omitted for brevity, assuming existing data stays same) ...
     "서울특별시": ["강남구", "강동구", "강북구", "강서구", "관악구", "광진구", "구로구", "금천구", "노원구", "도봉구", "동대문구", "동작구", "마포구", "서대문구", "서초구", "성동구", "성북구", "송파구", "양천구", "영등포구", "용산구", "은평구", "종로구", "중구", "중랑구"],
     "부산광역시": ["강서구", "금정구", "기장군", "남구", "동구", "동래구", "부산진구", "북구", "사상구", "사하구", "서구", "수영구", "연제구", "영도구", "중구", "해운대구"],
     "대구광역시": ["군위군", "남구", "달서구", "달성군", "동구", "북구", "서구", "수성구", "중구"],
@@ -86,7 +76,6 @@ const handleReset = () => {
     selectedDistrict.value = '';
     searchResults.value = [];
     searchCount.value = 0;
->>>>>>> Stashed changes
 };
 
 const handleMarkerClick = async (stationId) => {
@@ -96,11 +85,8 @@ const handleMarkerClick = async (stationId) => {
         if(response.data.success) {
             selectedStation.value = response.data.data;
             showDetailModal.value = true;
-<<<<<<< Updated upstream
         } else {
             console.error("Failed to fetch:", response.data.message);
-=======
->>>>>>> Stashed changes
         }
     } catch (error) {
         console.error("Failed to fetch detail:", error);
