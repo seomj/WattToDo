@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, inject } from 'vue';
+import { ref, onMounted, inject, watch } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -234,20 +234,18 @@ const handleUpdateInfo = async () => {
 };
 
 // History Modal State
-// History Modal State
+// Withdrawal Confirmation State
 const showHistoryModal = ref(false);
 const showFavoritesModal = ref(false);
 const showCarbonInfoModal = ref(false);
+const showWithdrawConfirm = ref(false);
 
 const handleLogout = () => {
     emit('logout');
 };
 
 const handleWithdraw = async () => {
-    if (!confirm("정말 탈퇴하시겠습니까? 탈퇴 후에는 모든 데이터가 삭제되며 복구할 수 없습니다.")) {
-        return;
-    }
-
+    showWithdrawConfirm.value = false;
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
@@ -306,6 +304,42 @@ const fetchMyPageData = async () => {
         loading.value = false;
     }
 };
+
+const animatedTotal = ref(0);
+let animationFrameId = null;
+
+const startCountAnimation = (target) => {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    
+    const startValue = animatedTotal.value;
+    const duration = 1500; // 1.5 seconds
+    const startTime = performance.now();
+
+    const animate = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        
+        animatedTotal.value = startValue + (target - startValue) * easeProgress;
+
+        if (progress < 1) {
+            animationFrameId = requestAnimationFrame(animate);
+        } else {
+            animatedTotal.value = target;
+        }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+};
+
+// Initial animation or update
+watch(() => props.user?.totalCarbonSaved, (newVal) => {
+    if (typeof newVal === 'number') {
+        startCountAnimation(newVal);
+    }
+}, { immediate: true });
 
 const toggleFavorite = async (stationId) => {
     const token = localStorage.getItem('accessToken');
@@ -367,16 +401,18 @@ onMounted(fetchMyPageData);
         </div>
 
         <!-- Carbon Saving Card -->
-        <div v-if="user?.totalCarbonSaved !== undefined" class="carbon-saving-card">
+        <div v-if="user" class="card carbon-saving-card">
           <div class="card-top">
             <div class="title-area">
-              <span class="leaf-icon">🍃</span>
+              <div class="icon-wrapper">
+                <span class="leaf-icon">🍃</span>
+              </div>
               <span class="label">누적 CO₂ 감축량</span>
             </div>
             <button class="info-btn" @click="showCarbonInfoModal = true">ⓘ</button>
           </div>
           <div class="card-value">
-            <span class="number">{{ (user.totalCarbonSaved || 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) }}</span>
+            <span class="number">{{ animatedTotal.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) }}</span>
             <span class="unit">kg CO₂</span>
           </div>
         </div>
@@ -482,7 +518,7 @@ onMounted(fetchMyPageData);
               </div>
               <span class="arrow">></span>
             </button>
-            <button class="action-item danger" @click="handleWithdraw">
+            <button class="action-item danger" @click="showWithdrawConfirm = true">
               <div class="action-left">
                 <span class="icon">🗑️</span>
                 <div class="action-text">
@@ -729,6 +765,27 @@ onMounted(fetchMyPageData);
         
         <div class="modal-footer">
           <button type="button" class="save-btn" @click="showCarbonInfoModal = false">확인</button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+  
+  <!-- Withdraw Confirm Modal -->
+  <Transition name="modal">
+    <div v-if="showWithdrawConfirm" class="modal-overlay" @click="showWithdrawConfirm = false">
+      <div class="modal-container confirm-modal" @click.stop>
+        <div class="modal-header">
+          <h2>회원 탈퇴</h2>
+          <button class="close-btn" @click="showWithdrawConfirm = false">&times;</button>
+        </div>
+        <div class="confirm-body">
+          <div class="warning-icon">⚠️</div>
+          <p class="confirm-message">정말 탈퇴하시겠습니까?</p>
+          <p class="confirm-sub">탈퇴 후에는 모든 데이터가 삭제되며 복구할 수 없습니다.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="cancel-btn" @click="showWithdrawConfirm = false">취소</button>
+          <button type="button" class="save-btn danger-btn" @click="handleWithdraw">탈퇴하기</button>
         </div>
       </div>
     </div>
@@ -1070,22 +1127,31 @@ onMounted(fetchMyPageData);
   margin-bottom: 0;
 }
 
-/* Carbon Saving Card (Enhanced Two-Line Style) */
+/* Carbon Saving Card (Modern Minimal Styling) */
 .carbon-saving-card {
-  background: linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%);
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 1px solid #dcfce7;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid #f3f4f6;
+  border-left: 5px solid #00C896; /* Bold highlight bar */
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  transition: all 0.2s;
+  gap: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  animation: carbonCardEntry 0.6s ease-out;
+}
+
+@keyframes carbonCardEntry {
+  from { transform: translateX(-10px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 .carbon-saving-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 20px -5px rgba(0, 200, 150, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
 .carbon-saving-card .card-top {
@@ -1097,26 +1163,43 @@ onMounted(fetchMyPageData);
 .carbon-saving-card .title-area {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.8rem;
+}
+
+.carbon-saving-card .icon-wrapper {
+  width: 36px;
+  height: 36px;
+  background-color: #f0fdf4;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseLeaf 2s infinite ease-in-out;
+}
+
+@keyframes pulseLeaf {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 200, 150, 0.2); }
+  70% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(0, 200, 150, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 200, 150, 0); }
 }
 
 .carbon-saving-card .leaf-icon {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
 
 .carbon-saving-card .label {
   font-size: 1rem;
-  font-weight: 600;
-  color: #374151;
+  font-weight: 700;
+  color: #374151; /* Neutral dark for clarity */
+  letter-spacing: -0.01em;
 }
 
 .carbon-saving-card .info-btn {
-  background: rgba(16, 185, 129, 0.1);
+  background: none;
   border: none;
-  color: #10b981;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
+  color: #9ca3af;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1126,8 +1209,8 @@ onMounted(fetchMyPageData);
 }
 
 .carbon-saving-card .info-btn:hover {
-  background: rgba(16, 185, 129, 0.2);
-  transform: scale(1.1);
+  color: #00C896;
+  transform: rotate(15deg);
 }
 
 .carbon-saving-card .card-value {
@@ -1137,16 +1220,17 @@ onMounted(fetchMyPageData);
 }
 
 .carbon-saving-card .number {
-  font-size: 2.25rem;
-  font-weight: 800;
-  color: #059669;
-  letter-spacing: -0.02em;
+  font-size: 2.75rem;
+  font-weight: 900;
+  color: #00C896; /* Branded green for the number */
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
 
 .carbon-saving-card .unit {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827; /* Near black for the unit */
 }
 
 /* Carbon Info Modal Styles */
@@ -1473,6 +1557,42 @@ onMounted(fetchMyPageData);
 
 .empty-state-full {
     grid-column: 1 / -1;
+}
+
+/* Confirm Modal Styles */
+.confirm-modal {
+  max-width: 380px;
+  text-align: center;
+}
+
+.confirm-body {
+  padding: 1rem 0 2rem;
+}
+
+.warning-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.confirm-message {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.confirm-sub {
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.danger-btn {
+  background-color: #ef4444 !important;
+}
+
+.danger-btn:hover {
+  background-color: #dc2626 !important;
 }
 
 @media (max-width: 1024px) {

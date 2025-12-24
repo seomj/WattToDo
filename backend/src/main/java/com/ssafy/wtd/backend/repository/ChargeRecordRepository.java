@@ -22,4 +22,5 @@ public interface ChargeRecordRepository {
     ChargeRecord selectActiveRecordByUserId(Long userId); // 충전 중인 기록을 조회하는 메서드
     ChargeRecord selectRecordById(Long recordId);
     List<ChargeRecord> findAllByUserId(@Param("userId") Long userId);
+    int deleteById(Long recordId); // 충전 기록 삭제
 }

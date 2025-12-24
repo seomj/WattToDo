@@ -11,4 +11,5 @@ public class LoginRes {
     private String refreshToken;
     private String name;
     private LocalDateTime createdAt;
+    private Float totalCarbonSaved;
 }

@@ -32,7 +32,8 @@ const handleLogin = async () => {
                 name: response.data.name || "사용자", // Access name from payload
                 email: email.value,
                 status: "ACTIVE",
-                createdAt: response.data.createdAt
+                createdAt: response.data.createdAt,
+                totalCarbonSaved: response.data.totalCarbonSaved || 0
             };
             
             emit('login-success', userData);

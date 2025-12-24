@@ -45,4 +45,9 @@
         ORDER BY r.start_time DESC
     </select>
 
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM charge_record
+        WHERE record_id = #{recordId}
+    </delete>
+
 </mapper>

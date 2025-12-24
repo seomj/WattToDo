@@ -91,5 +91,41 @@ public class RecordController {
         return ResponseEntity.ok(response);
     }
 
+    // 충전 강제 종료 API (이미지 인증 없이 취소)
+    // DELETE /charge-records/{recordId}/cancel
+    @DeleteMapping("/{recordId}/cancel")
+    public ResponseEntity<?> cancelCharging(
+            @PathVariable Long recordId,
+            Authentication authentication) {
+
+        if (authentication == null) {
+            return ResponseEntity.status(401).body("로그인이 필요합니다.");
+        }
+
+        User user = userRepository.findByEmail(authentication.getName());
+        if (user == null) {
+            return ResponseEntity.status(404).body("사용자를 찾을 수 없습니다.");
+        }
+
+        // 충전 기록 조회
+        ChargeRecord record = chargeRecordRepository.selectRecordById(recordId);
+        if (record == null) {
+            return ResponseEntity.status(404).body("충전 기록을 찾을 수 없습니다.");
+        }
+
+        // 본인의 기록인지 확인
+        if (!record.getUserId().equals(user.getUserId())) {
+            return ResponseEntity.status(403).body("권한이 없습니다.");
+        }
+
+        // 충전 기록 삭제
+        chargeRecordRepository.deleteById(recordId);
+
+        // 사용자 상태를 ACTIVE로 변경
+        userRepository.updateStatus(user.getUserId(), "ACTIVE");
+
+        return ResponseEntity.ok().body("충전이 취소되었습니다.");
+    }
+
     // ... 충전 완료, 기록 조회 등의 다른 API 메서드가 추가됩니다.
 }

@@ -117,6 +117,28 @@ const handleFileChange = (event) => {
   }
 }
 
+const handleForceStop = async () => {
+    if (!recordId.value) return;
+
+    try {
+        const token = localStorage.getItem('accessToken');
+        const response = await axios.delete(`http://localhost:8080/charge-records/${recordId.value}/cancel`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        showAlert({
+            title: '충전 취소',
+            message: '충전이 취소되었습니다. 충전 기록은 저장되지 않습니다.',
+            emoji: '🚫'
+        });
+        
+        emit('analyze'); // This will trigger status update to ACTIVE in App.vue
+    } catch (error) {
+        console.error("Force stop failed:", error);
+        showAlert({ title: '오류', message: "충전 취소 중 오류가 발생했습니다.", emoji: '⚠️' });
+    }
+};
+
 watch(() => props.show, (newVal) => {
   if (newVal) {
     step.value = props.initialStep
@@ -140,6 +162,7 @@ watch(() => props.show, (newVal) => {
         
         <div class="button-group">
           <button class="btn btn-outline" @click="$emit('close')">취소</button>
+          <button class="btn btn-danger" @click="handleForceStop">강제 종료</button>
           <button class="btn btn-primary" @click="step = 'upload'">인증하기</button>
         </div>
       </div>
@@ -285,6 +308,15 @@ h2 {
 .btn-primary {
   background-color: #3b82f6; /* Blue */
   color: white;
+}
+
+.btn-danger {
+  background-color: #ef4444; /* Red */
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
 }
 
 .btn-disabled {

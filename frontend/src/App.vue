@@ -30,6 +30,16 @@ const currentComponent = computed(() => {
 });
 
 const handleNavigate = (view, params = null) => {
+  if (!user.value && (view === 'ACTIVITY' || view === 'MYPAGE')) {
+    showAlert({
+        title: '접근 제한',
+        message: '로그인이 필요한 기능입니다. 로그인 후 이용해 주세요.',
+        emoji: '🔒'
+    });
+    currentView.value = 'LOGIN';
+    return;
+  }
+  
   currentView.value = view;
   if (params && params.stationId) {
     targetStationId.value = params.stationId;

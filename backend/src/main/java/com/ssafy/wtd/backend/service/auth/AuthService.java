@@ -30,6 +30,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final com.ssafy.wtd.backend.repository.CarbonRepository carbonRepository;
 
     /**
      * 회원가입 처리
@@ -130,7 +131,11 @@ public class AuthService {
 
         refreshTokenRepository.save(tokenEntity);
 
-        // 6. 응답
-        return new LoginRes(accessToken, refreshToken, user.getName(), user.getCreatedAt());
+        // 6. CO2 감축량 조회
+        Float totalCarbonSavedReq = carbonRepository.getTotalCarbonSavedByUserId(user.getUserId());
+        float totalCarbonSaved = (totalCarbonSavedReq != null) ? totalCarbonSavedReq : 0.0f;
+
+        // 7. 응답
+        return new LoginRes(accessToken, refreshToken, user.getName(), user.getCreatedAt(), totalCarbonSaved);
     }
 }
