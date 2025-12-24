@@ -107,6 +107,14 @@ const handleRegisterVehicle = async () => {
         alert(error.response?.data?.message || "차량 등록 중 오류가 발생했습니다.");
     }
 };
+// Account Editing State
+const showEditModal = ref(false);
+const isVerified = ref(false);
+const verificationPassword = ref('');
+const editForm = ref({
+    email: '',
+    password: ''
+});
 
 const openEditModal = () => {
     isVerified.value = false;
