@@ -88,14 +88,30 @@ watch(user, (newUser) => {
     }
 });
 
-const handleStatusUpdate = (status) => {
+const handleStatusUpdate = async (status) => {
     const previousStatus = user.value?.status;
     if (user.value) {
         user.value.status = status;
     }
+    
     // Reset activity search when charging ends
     if (previousStatus === 'CHARGING' && status !== 'CHARGING') {
         resetActivityStore();
+        
+        // Fetch latest user info to update CO2 savings
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            try {
+                const response = await axios.get('http://localhost:8080/myinfo', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.data.success) {
+                    user.value = { ...user.value, ...response.data.data };
+                }
+            } catch (error) {
+                console.error("Failed to refresh user info:", error);
+            }
+        }
     }
 };
 
