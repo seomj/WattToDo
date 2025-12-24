@@ -16,14 +16,97 @@ const chargeRecords = ref([]);
 const favoriteStations = ref([]);
 const loading = ref(true);
 
-// Edit Profile State
-const showEditModal = ref(false);
-const isVerified = ref(false);
-const verificationPassword = ref('');
-const editForm = ref({
-    email: '',
-    password: ''
+// Vehicle Registration State
+const showVehicleModal = ref(false);
+const vehicleForm = ref({
+    model: '',
+    efficiency: null,
+    batteryCapacity: null,
+    maxRange: null,
+    dcChargeType: '',
+    acChargeType: ''
 });
+
+const openVehicleModal = (existingVehicle = null) => {
+    if (existingVehicle) {
+        vehicleForm.value = { ...existingVehicle };
+    } else {
+        vehicleForm.value = {
+            model: '',
+            efficiency: null,
+            batteryCapacity: null,
+            maxRange: null,
+            dcChargeType: 'DC콤보',
+            acChargeType: 'AC단상 5핀'
+        };
+    }
+    showVehicleModal.value = true;
+};
+
+// Lookup spec by model name
+const lookupLoading = ref(false);
+const lookupStatus = ref({ type: '', message: '' });
+
+const handleLookupSpec = async () => {
+    if (!vehicleForm.value.model || vehicleForm.value.model.trim().length < 2) {
+        alert("검색할 모델명을 2글자 이상 입력해주세요.");
+        return;
+    }
+
+    lookupLoading.value = true;
+    lookupStatus.value = { type: '', message: '' };
+
+    try {
+        const token = localStorage.getItem('accessToken');
+        const response = await axios.get(`http://localhost:8080/vehicles/spec`, {
+            params: { model: vehicleForm.value.model },
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.data.success && response.data.data) {
+            const spec = response.data.data;
+            vehicleForm.value = {
+                ...vehicleForm.value,
+                efficiency: spec.efficiency,
+                batteryCapacity: spec.batteryCapacity,
+                maxRange: spec.maxRange,
+                dcChargeType: spec.dcChargeType,
+                acChargeType: spec.acChargeType
+            };
+            lookupStatus.value = { type: 'success', message: '💡 차종 정보를 찾았습니다! 상세 스펙이 자동 입력되었습니다.' };
+        } else {
+            lookupStatus.value = { type: 'error', message: '❌ 검색된 정보가 없습니다. 상세 스펙을 직접 입력해주세요.' };
+        }
+    } catch (error) {
+        console.error("Failed to fetch spec", error);
+        lookupStatus.value = { type: 'error', message: '⚠️ 조회 중 오류가 발생했습니다.' };
+    } finally {
+        lookupLoading.value = false;
+    }
+};
+
+const handleRegisterVehicle = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        const response = await axios.post('http://localhost:8080/vehicles', vehicleForm.value, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.data.success) {
+            const isUpdate = !!vehicle.value;
+            alert(isUpdate ? "차량 정보가 성공적으로 수정되었습니다." : "차량이 성공적으로 등록되었습니다.");
+            vehicle.value = response.data.data;
+            showVehicleModal.value = false;
+        } else {
+            alert(response.data.message || "등록 실패");
+        }
+    } catch (error) {
+        console.error("Vehicle registration failed:", error);
+        alert(error.response?.data?.message || "차량 등록 중 오류가 발생했습니다.");
+    }
+};
 
 const openEditModal = () => {
     isVerified.value = false;
@@ -84,6 +167,10 @@ const handleUpdateInfo = async () => {
         console.error("Update failed:", error);
         alert(error.response?.data?.message || "정보 수정 중 오류가 발생했습니다.");
     }
+};
+
+const handleLogout = () => {
+    emit('logout');
 };
 
 const handleWithdraw = async () => {
@@ -205,7 +292,7 @@ onMounted(fetchMyPageData);
         <div class="card vehicle-card">
           <div class="card-header">
             <h3>🚗 차량 정보</h3>
-            <button class="text-btn" v-if="vehicle" @click="console.log('Update vehicle')">수정</button>
+            <button class="text-btn" v-if="vehicle" @click="openVehicleModal(vehicle)">수정</button>
           </div>
           
           <div v-if="vehicle" class="vehicle-info">
@@ -224,7 +311,7 @@ onMounted(fetchMyPageData);
           
           <div v-else class="no-vehicle">
             <p>등록된 차량이 없습니다.</p>
-            <button class="outline-btn" @click="console.log('Register vehicle')">차량 등록하기</button>
+            <button class="outline-btn" @click="openVehicleModal()">차량 등록하기</button>
           </div>
         </div>
       </div>
@@ -292,7 +379,7 @@ onMounted(fetchMyPageData);
               </div>
               <span class="arrow">></span>
             </button>
-            <button class="action-item" @click="$emit('logout')">
+            <button class="action-item" @click="handleLogout">
               <div class="action-left">
                 <span class="icon">🚪</span>
                 <div class="action-text">
@@ -314,8 +401,8 @@ onMounted(fetchMyPageData);
         </div>
       </div>
     </div>
-    </div>
   </div>
+</div>
 
   <!-- Edit Profile Modal -->
   <Transition name="modal">
@@ -362,6 +449,79 @@ onMounted(fetchMyPageData);
             </div>
           </form>
         </div>
+      </div>
+    </div>
+  </Transition>
+
+  <!-- Vehicle Registration Modal -->
+  <Transition name="modal">
+    <div v-if="showVehicleModal" class="modal-overlay" @click="showVehicleModal = false">
+      <div class="modal-container" @click.stop>
+        <div class="modal-header">
+          <h2>{{ vehicle ? '차량 정보 수정' : '차량 등록' }}</h2>
+          <button class="close-btn" @click="showVehicleModal = false">&times;</button>
+        </div>
+        
+        <p class="step-desc">
+          모델명을 입력하시면 기존 데이터를 바탕으로 스펙이 자동 입력됩니다.<br>
+          우리 DB에 없는 모델의 경우 상세 스펙을 직접 입력해주세요.
+        </p>
+
+        <form @submit.prevent="handleRegisterVehicle" class="modal-form">
+          <div class="form-group">
+            <label>모델명 (필수)</label>
+            <div class="input-with-button">
+                <input type="text" v-model="vehicleForm.model" required placeholder="예: 아이오닉 6 롱레인지">
+                <button type="button" class="lookup-btn" @click="handleLookupSpec" :disabled="lookupLoading">
+                    {{ lookupLoading ? '...' : '스펙 조회' }}
+                </button>
+            </div>
+            <p v-if="lookupStatus.message" class="lookup-msg" :class="lookupStatus.type">
+                {{ lookupStatus.message }}
+            </p>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>전비 (km/kWh)</label>
+              <input type="number" step="0.1" v-model="vehicleForm.efficiency" placeholder="5.4">
+            </div>
+            <div class="form-group">
+              <label>배터리 용량 (kWh)</label>
+              <input type="number" step="0.1" v-model="vehicleForm.batteryCapacity" placeholder="77.4">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>주행 가능 거리 (km)</label>
+            <input type="number" step="0.1" v-model="vehicleForm.maxRange" placeholder="450">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>급속 충전 타입</label>
+              <select v-model="vehicleForm.dcChargeType" class="form-select">
+                <option value="DC콤보">DC콤보</option>
+                <option value="CHAdeMO">차데모</option>
+                <option value="AC3상">AC3상</option>
+                <option value="테슬라">테슬라/NACS</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>완속 충전 타입</label>
+              <select v-model="vehicleForm.acChargeType" class="form-select">
+                <option value="AC단상 5핀">AC 5핀 (Type 1)</option>
+                <option value="AC단상 7핀">AC 7핀 (Type 2)</option>
+                <option value="테슬라">테슬라/NACS</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="cancel-btn" @click="showVehicleModal = false">취소</button>
+            <button type="submit" class="save-btn">{{ vehicle ? '수정 완료' : '등록 완료' }}</button>
+          </div>
+        </form>
       </div>
     </div>
   </Transition>
@@ -438,18 +598,67 @@ onMounted(fetchMyPageData);
   color: #374151;
 }
 
-.form-group input {
+.form-group input, .form-select {
   padding: 0.75rem 1rem;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   font-size: 1rem;
   transition: border-color 0.2s;
+  background-color: white;
 }
 
-.form-group input:focus {
+.form-group input:focus, .form-select:focus {
   outline: none;
   border-color: #3b82f6;
-  ring: 2px solid #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.input-with-button {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-with-button input {
+  flex: 1;
+}
+
+.lookup-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+}
+
+.lookup-btn:hover {
+  background-color: #2563eb;
+}
+
+.lookup-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.lookup-msg {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.lookup-msg.success {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.lookup-msg.error {
+  background-color: #fef2f2;
+  color: #dc2626;
 }
 
 .form-help {

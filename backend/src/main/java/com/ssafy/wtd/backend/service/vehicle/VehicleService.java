@@ -103,6 +103,14 @@ public class VehicleService {
         vehicleRepository.deleteByUserId(userId);
     }
 
+    /**
+     * 모델명으로 차량 스펙 조회 (자동 채움용)
+     */
+    public VehicleRes getVehicleSpec(String model) {
+        Vehicle spec = vehicleRepository.findSpecByModel(model);
+        return spec == null ? null : toRes(spec);
+    }
+
     /* ===========================
        private helper
        =========================== */

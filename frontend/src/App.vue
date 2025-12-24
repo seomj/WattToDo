@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import Header from './components/Header.vue';
 import MapView from './views/MapView.vue';
 import ActivityView from './views/ActivityView.vue';
@@ -48,19 +48,18 @@ const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     user.value = null;
-    currentView.value = 'HOME';
+    window.location.href = '/'; 
 };
 
 const handleWithdrawSuccess = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     user.value = null;
-    currentView.value = 'HOME';
     alert("회원 탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.");
+    window.location.href = '/';
 };
 
 // Security Guard: Redirect to HOME if user logs out while on a protected page
-import { watch } from 'vue';
 watch(user, (newUser) => {
     if (!newUser && (currentView.value === 'MYPAGE' || currentView.value === 'ACTIVITY')) {
         currentView.value = 'HOME';

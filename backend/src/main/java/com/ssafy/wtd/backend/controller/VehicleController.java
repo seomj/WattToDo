@@ -34,6 +34,14 @@ public class VehicleController {
     }
 
     /**
+     * 모델명으로 차량 스펙 상세 조회
+     */
+    @GetMapping("/spec")
+    public ApiRes<VehicleRes> getVehicleSpec(@RequestParam String model) {
+        return ApiRes.ok(vehicleService.getVehicleSpec(model));
+    }
+
+    /**
      * 차량 등록 (없으면 생성, 있으면 갱신)
      */
 //    @PostMapping

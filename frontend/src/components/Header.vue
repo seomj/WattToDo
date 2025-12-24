@@ -12,7 +12,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['open-charging-modal', 'navigate'])
+const emit = defineEmits(['open-charging-modal', 'navigate', 'logout'])
 
 const isCharging = computed(() => props.user && props.user.status === 'CHARGING')
 </script>
