@@ -177,6 +177,9 @@ const handleUpdateInfo = async () => {
     }
 };
 
+// History Modal State
+const showHistoryModal = ref(false);
+
 const handleLogout = () => {
     emit('logout');
 };
@@ -330,7 +333,7 @@ onMounted(fetchMyPageData);
         <div class="card history-card">
           <div class="card-header">
             <h3>🕒 충전 기록</h3>
-            <button class="text-btn">전체 보기 ></button>
+            <button class="text-btn" @click="showHistoryModal = true">전체 보기 ></button>
           </div>
           <div class="history-list">
             <div v-for="record in chargeRecords.slice(0, 5)" :key="record.recordId" class="history-item">
@@ -533,6 +536,41 @@ onMounted(fetchMyPageData);
       </div>
     </div>
   </Transition>
+
+  <!-- Full History Modal -->
+  <Transition name="modal">
+    <div v-if="showHistoryModal" class="modal-overlay" @click="showHistoryModal = false">
+      <div class="modal-container history-modal" @click.stop>
+        <div class="modal-header">
+          <h2>전체 충전 기록</h2>
+          <button class="close-btn" @click="showHistoryModal = false">&times;</button>
+        </div>
+        
+        <div class="full-history-list">
+          <div v-for="record in chargeRecords" :key="record.recordId" class="history-item">
+            <div class="item-left">
+              <div class="status-icon" :class="record.status.toLowerCase()">⚡</div>
+              <div class="item-info">
+                <div class="st-name">{{ record.stationName || '충전소' }}</div>
+                <div class="st-date">{{ formatDate(record.startTime) }}</div>
+              </div>
+            </div>
+            <div class="item-right">
+              <div class="amount">{{ record.chargedKwh || 0 }} kWh</div>
+              <div class="cost">₩{{ record.chargingCost?.toLocaleString() || 0 }}</div>
+            </div>
+          </div>
+          <div v-if="chargeRecords.length === 0" class="empty-state">
+            충전 기록이 없습니다.
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="save-btn" @click="showHistoryModal = false">닫기</button>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -667,6 +705,27 @@ onMounted(fetchMyPageData);
 .lookup-msg.error {
   background-color: #fef2f2;
   color: #dc2626;
+}
+
+/* History Modal Specific Styles */
+.history-modal {
+  max-width: 600px;
+}
+
+.full-history-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.full-history-list .history-item {
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #f3f4f6;
 }
 
 .form-help {
