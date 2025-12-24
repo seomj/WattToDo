@@ -9,7 +9,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public enum ChargerStatus {
 
-    AVAILABLE(2, "충전가능", MarkerColor.GREEN),
+    AVAILABLE(0, "충전가능", MarkerColor.GREEN),
     CHARGING(3, "충전중", MarkerColor.BLUE),
 
     COMM_ERROR(1, "통신이상", MarkerColor.GRAY),

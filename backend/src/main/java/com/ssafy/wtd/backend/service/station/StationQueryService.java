@@ -69,19 +69,16 @@ public class StationQueryService {
         return stations;
     }
 
-    /**
-     * 마커 색상 계산 (공통 로직)
-     */
     private void applyMarkerColor(List<StationMarkerDto> stations) {
 
         for (StationMarkerDto s : stations) {
 
-            if (s.getAvailableCount() > 0) {
-                s.setMarkerColor("GREEN");
-            } else if (s.getTotalCount() > 0) {
-                s.setMarkerColor("BLUE");
+            if (s.getTotalCount() > 0 && s.getAvailableCount() == s.getTotalCount()) {
+                s.setMarkerColor("GREEN"); // 모두 이용 가능
+            } else if (s.getAvailableCount() > 0) {
+                s.setMarkerColor("BLUE");  // 1개 이상 이용 가능 (일부 이용 가능)
             } else {
-                s.setMarkerColor("GRAY");
+                s.setMarkerColor("GRAY");  // 이용 불가
             }
         }
     }

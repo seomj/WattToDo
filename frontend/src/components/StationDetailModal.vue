@@ -66,7 +66,7 @@ const getChargerCount = (chargers, type) => {
     const available = chargers.filter(c => {
         if (!c.chargeType || !c.chargeType.includes(type)) return false;
         const s = String(c.status).toUpperCase();
-        return s === '3' || s === 'WAIT' || s === 'AVAILABLE';
+        return s === '0' || s === '2' || s === 'AVAILABLE' || s === 'WAIT'; // 0 or 2: Available
     }).length;
     return `${available}/${total}`;
 };
@@ -76,15 +76,15 @@ const getStatusColor = (status) => {
     // Backend might return "AVAILABLE", "CHARGING", "WAIT" or numbers "1", "2"...
     // Ensure we check all string variants
     const s = String(status).toUpperCase();
-    if (s === '2' || s === 'CHARGING') return '#16a34a'; // Green (Charging)
-    if (s === '3' || s === 'WAIT' || s === 'AVAILABLE') return '#2563eb'; // Blue (Available)
+    if (s === '3' || s === 'CHARGING') return '#f97316'; // Orange (Charging)
+    if (s === '0' || s === '2' || s === 'AVAILABLE' || s === 'WAIT') return '#2563eb'; // Blue (Available)
     return '#9ca3af'; // Gray (Unavailable/Unknown)
 };
 
 const getStatusText = (status) => {
      const s = String(status).toUpperCase();
-     if (s === '2' || s === 'CHARGING') return '충전중';
-     if (s === '3' || s === 'WAIT' || s === 'AVAILABLE') return '사용 가능';
+     if (s === '3' || s === 'CHARGING') return '충전중';
+     if (s === '0' || s === '2' || s === 'AVAILABLE' || s === 'WAIT') return '사용 가능';
      return '사용 불가';
 };
 </script>

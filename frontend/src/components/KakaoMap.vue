@@ -120,11 +120,28 @@ onMounted(() => {
 <template>
   <div class="map-wrapper">
     <div ref="mapContainer" class="kakao-map"></div>
+    
+    <!-- Legend UI -->
+    <div class="map-legend">
+      <div class="legend-item">
+        <span class="dot green"></span>
+        <span class="label">이용 가능</span>
+      </div>
+      <div class="legend-item">
+        <span class="dot blue"></span>
+        <span class="label">일부 이용 가능</span>
+      </div>
+      <div class="legend-item">
+        <span class="dot gray"></span>
+        <span class="label">이용 불가</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .map-wrapper {
+  position: relative;
   width: 100%;
   height: 100%;
   min-height: 400px;
@@ -132,5 +149,43 @@ onMounted(() => {
 .kakao-map {
   width: 100%;
   height: 100%;
+}
+
+/* Legend Styles */
+.map-legend {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.green { background-color: #4CAF50; }
+.dot.blue { background-color: #2196F3; }
+.dot.gray { background-color: #9E9E9E; }
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
 }
 </style>
