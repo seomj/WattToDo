@@ -10,6 +10,7 @@ import ChargingModal from './components/ChargingModal.vue';
 import CustomAlert from './components/CustomAlert.vue';
 import axios from 'axios';
 import { provide } from 'vue';
+import { resetActivityStore } from './stores/activityStore';
 
 const currentView = ref('HOME');
 const targetStationId = ref(null);
@@ -50,6 +51,7 @@ const handleUpdateUser = (updatedData) => {
 const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    resetActivityStore(); // Reset activity search on logout
     user.value = null;
     window.location.href = '/'; 
 };
@@ -70,8 +72,13 @@ watch(user, (newUser) => {
 });
 
 const handleStatusUpdate = (status) => {
+    const previousStatus = user.value?.status;
     if (user.value) {
         user.value.status = status;
+    }
+    // Reset activity search when charging ends
+    if (previousStatus === 'CHARGING' && status !== 'CHARGING') {
+        resetActivityStore();
     }
 };
 

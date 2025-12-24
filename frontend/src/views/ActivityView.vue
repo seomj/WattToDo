@@ -153,13 +153,19 @@ onMounted(async () => {
 
   // 2. Fetch Estimated Charge Time (Only if not already searched)
   if (!activityStore.hasSearched) {
-    try {
-      const data = await getEstimatedTime(1) // Mock user ID
-      if (data.estimatedTime) {
-        activityStore.filters.chargeTime = data.estimatedTime
+    // Check if user is charging
+    if (props.user && props.user.status === 'CHARGING') {
+      try {
+        const data = await getEstimatedTime(1) // Mock user ID
+        if (data.estimatedTime) {
+          activityStore.filters.chargeTime = data.estimatedTime
+        }
+      } catch (error) {
+        console.warn('Failed to fetch estimated charge time.')
       }
-    } catch (error) {
-      console.warn('Failed to fetch estimated charge time.')
+    } else {
+      // User is not charging, set charge time to 0
+      activityStore.filters.chargeTime = 0
     }
   }
 })
