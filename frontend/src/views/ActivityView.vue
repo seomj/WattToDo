@@ -3,24 +3,12 @@ import { ref, onMounted } from 'vue'
 import ActivityDetailModal from '../components/ActivityDetailModal.vue'
 import MapModal from '../components/MapModal.vue'
 import { getRecommendations, getEstimatedTime } from '../api/activity'
+import { activityStore } from '../stores/activityStore'
 
 const props = defineProps(['user'])
 
-const isExpandedSearch = ref(false)
-const recommendations = ref([])
-const hasSearched = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
-
-// Filter State
-const chargeTime = ref(30)
-const isEcoFriendly = ref(false) 
-const travelTime = ref(5) // Minutes, 10 min increments
-const selectedCategory = ref([])
-const usePublicTransport = ref(false)
-const personnel = ref(1)
-const selectedPurpose = ref([])
-const selectedPreference = ref('')
 
 // User Location
 const userLocation = ref({ lat: 37.5547, lng: 126.9707 }) // Default: Seoul Station
@@ -101,7 +89,7 @@ const getEmoji = (key) => emojiMap[key?.toLowerCase()] || '📍'
 
 // Toggle Search Mode
 const toggleSearch = () => {
-  isExpandedSearch.value = !isExpandedSearch.value
+  activityStore.isExpandedSearch = !activityStore.isExpandedSearch
 }
 
 // Fetch Recommendations
@@ -114,27 +102,27 @@ const handleSearch = async () => {
 
   isLoading.value = true
   errorMessage.value = ''
-  hasSearched.value = true
+  activityStore.hasSearched = true
   
   try {
     const req = {
       userId: 1, // Mock user ID
       latitude: userLocation.value.lat,
       longitude: userLocation.value.lng,
-      chargingTime: chargeTime.value,
-      ecoFriendly: isEcoFriendly.value,
-      publicTransport: usePublicTransport.value,
-      travelTime: travelTime.value,
-      personCount: personnel.value,
-      purposes: selectedPurpose.value,
-      locations: selectedCategory.value,
-      preferences: selectedPreference.value
+      chargingTime: activityStore.filters.chargeTime,
+      ecoFriendly: activityStore.filters.isEcoFriendly,
+      publicTransport: activityStore.filters.usePublicTransport,
+      travelTime: activityStore.filters.travelTime,
+      personCount: activityStore.filters.personnel,
+      purposes: activityStore.filters.selectedPurpose,
+      locations: activityStore.filters.selectedCategory,
+      preferences: activityStore.filters.selectedPreference
     }
 
     const response = await getRecommendations(req)
     
     // Map backend response to frontend format
-    recommendations.value = response.recommendations.map((item, index) => ({
+    activityStore.recommendations = response.recommendations.map((item, index) => ({
       id: index,
       name: item.placeName,
       category: item.category,
@@ -152,7 +140,7 @@ const handleSearch = async () => {
   } catch (error) {
     console.error('Failed to get recommendations:', error)
     errorMessage.value = error.message
-    recommendations.value = []
+    activityStore.recommendations = []
   } finally {
     isLoading.value = false
   }
@@ -163,14 +151,16 @@ onMounted(async () => {
   // 1. Get Initial Location
   refreshLocation()
 
-  // 2. Fetch Estimated Charge Time
-  try {
-    const data = await getEstimatedTime(1) // Mock user ID
-    if (data.estimatedTime) {
-      chargeTime.value = data.estimatedTime
+  // 2. Fetch Estimated Charge Time (Only if not already searched)
+  if (!activityStore.hasSearched) {
+    try {
+      const data = await getEstimatedTime(1) // Mock user ID
+      if (data.estimatedTime) {
+        activityStore.filters.chargeTime = data.estimatedTime
+      }
+    } catch (error) {
+      console.warn('Failed to fetch estimated charge time.')
     }
-  } catch (error) {
-    console.warn('Failed to fetch estimated charge time.')
   }
 })
 
@@ -202,7 +192,7 @@ const handleOpenMap = () => {
       <div class="card-header">
         <span class="card-title">검색 조건</span>
         <button class="toggle-btn" @click="toggleSearch">
-          {{ isExpandedSearch ? '접기' : '상세 검색' }}
+          {{ activityStore.isExpandedSearch ? '접기' : '상세 검색' }}
         </button>
       </div>
 
@@ -212,17 +202,17 @@ const handleOpenMap = () => {
           <div class="filter-group">
             <label>🕒 충전 시간 <span class="required">*</span></label>
             <div class="counter-control">
-               <button @click="chargeTime > 1 ? chargeTime-- : null">-</button>
+               <button @click="activityStore.filters.chargeTime > 1 ? activityStore.filters.chargeTime-- : null">-</button>
                <div class="input-wrapper">
-                 <input type="number" v-model="chargeTime" class="time-input" />
+                 <input type="number" v-model="activityStore.filters.chargeTime" class="time-input" />
                  <span>분</span>
                </div>
-               <button @click="chargeTime++">+</button>
+               <button @click="activityStore.filters.chargeTime++">+</button>
             </div>
           </div>
         </div>
 
-        <template v-if="isExpandedSearch">
+        <template v-if="activityStore.isExpandedSearch">
           <!-- Row 2: Eco, Transport, Travel Time, Personnel (Equal spacing) -->
           <div class="filter-row grid-row spacing-row">
             <!-- Eco Friendly -->
@@ -230,7 +220,7 @@ const handleOpenMap = () => {
                <label>🌿 친환경 여부</label>
                <div class="checkbox-wrapper">
                    <label class="checkbox-label">
-                     <input type="checkbox" v-model="isEcoFriendly" />
+                     <input type="checkbox" v-model="activityStore.filters.isEcoFriendly" />
                      포함
                    </label>
                </div>
@@ -241,7 +231,7 @@ const handleOpenMap = () => {
               <label>🚌 대중교통</label>
               <div class="checkbox-wrapper">
                 <label class="checkbox-label">
-                  <input type="checkbox" v-model="usePublicTransport" />
+                  <input type="checkbox" v-model="activityStore.filters.usePublicTransport" />
                   이용 가능
                 </label>
               </div>
@@ -251,12 +241,12 @@ const handleOpenMap = () => {
             <div class="filter-group">
               <label>⏱️ 이동 시간</label>
               <div class="counter-control">
-                <button @click="travelTime > 1 ? travelTime-- : null">-</button>
+                <button @click="activityStore.filters.travelTime > 1 ? activityStore.filters.travelTime-- : null">-</button>
                 <div class="input-wrapper">
-                  <input type="number" v-model="travelTime" class="time-input" />
+                  <input type="number" v-model="activityStore.filters.travelTime" class="time-input" />
                   <span>분</span>
                 </div>
-                <button @click="travelTime++">+</button>
+                <button @click="activityStore.filters.travelTime++">+</button>
               </div>
             </div>
 
@@ -264,12 +254,12 @@ const handleOpenMap = () => {
             <div class="filter-group">
               <label>👥 인원</label>
               <div class="counter-control">
-                <button @click="personnel > 1 ? personnel-- : null">-</button>
+                <button @click="activityStore.filters.personnel > 1 ? activityStore.filters.personnel-- : null">-</button>
                 <div class="input-wrapper">
-                  <input type="number" v-model="personnel" class="time-input" />
+                  <input type="number" v-model="activityStore.filters.personnel" class="time-input" />
                   <span>명</span>
                 </div>
-                <button @click="personnel++">+</button>
+                <button @click="activityStore.filters.personnel++">+</button>
               </div>
             </div>
           </div>
@@ -287,8 +277,8 @@ const handleOpenMap = () => {
                    v-for="purp in ['업무/공부', '휴식', '식사', '운동', '쇼핑', '관광']" 
                    :key="purp"
                    class="chip"
-                   :class="{ active: selectedPurpose.includes(purp) }"
-                   @click="selectedPurpose.includes(purp) ? selectedPurpose = selectedPurpose.filter(p => p !== purp) : selectedPurpose.push(purp)"
+                   :class="{ active: activityStore.filters.selectedPurpose.includes(purp) }"
+                   @click="activityStore.filters.selectedPurpose.includes(purp) ? activityStore.filters.selectedPurpose = activityStore.filters.selectedPurpose.filter(p => p !== purp) : activityStore.filters.selectedPurpose.push(purp)"
                  >
                    {{ purp }}
                  </button>
@@ -303,8 +293,8 @@ const handleOpenMap = () => {
                    v-for="cat in ['카페', '편의점', '공원', '산책로', '식당', '쇼핑몰', '서점', '도서관']" 
                    :key="cat"
                    class="chip"
-                   :class="{ active: selectedCategory.includes(cat) }"
-                   @click="selectedCategory.includes(cat) ? selectedCategory = selectedCategory.filter(c => c !== cat) : selectedCategory.push(cat)"
+                   :class="{ active: activityStore.filters.selectedCategory.includes(cat) }"
+                   @click="activityStore.filters.selectedCategory.includes(cat) ? activityStore.filters.selectedCategory = activityStore.filters.selectedCategory.filter(c => c !== cat) : activityStore.filters.selectedCategory.push(cat)"
                  >
                    {{ cat }}
                  </button>
@@ -316,7 +306,7 @@ const handleOpenMap = () => {
                <label>✨ 상세 선호도 (직접 입력)</label>
                <input 
                  type="text" 
-                 v-model="selectedPreference" 
+                 v-model="activityStore.filters.selectedPreference" 
                  placeholder="예: 조용하고 사람이 적은 곳, 힙한 카페 등"
                  class="preference-input"
                />
@@ -351,7 +341,7 @@ const handleOpenMap = () => {
     </div>
 
     <!-- Results Section -->
-    <div v-if="hasSearched && !isLoading" class="results-section">
+    <div v-if="activityStore.hasSearched && !isLoading" class="results-section">
       <div v-if="errorMessage" class="error-state">
         <div class="error-icon">⚠️</div>
         <p class="error-message">{{ errorMessage }}</p>
@@ -360,12 +350,12 @@ const handleOpenMap = () => {
 
       <template v-else>
         <div class="results-header">
-          <span class="section-title">추천 장소 {{ recommendations.length }}곳</span>
-          <span class="info-text">충전 시간 {{ chargeTime }}분 기준</span>
+          <span class="section-title">추천 장소 {{ activityStore.recommendations.length }}곳</span>
+          <span class="info-text">충전 시간 {{ activityStore.filters.chargeTime }}분 기준</span>
         </div>
 
-        <TransitionGroup name="list" tag="div" v-if="recommendations.length > 0" class="cards-grid">
-          <div v-for="item in recommendations" :key="item.id" class="place-card">
+        <TransitionGroup name="list" tag="div" v-if="activityStore.recommendations.length > 0" class="cards-grid">
+          <div v-for="item in activityStore.recommendations" :key="item.id" class="place-card">
             <div class="card-top">
               <div class="icon-area">{{ item.icon }}</div>
               <div class="text-area">
