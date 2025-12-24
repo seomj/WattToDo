@@ -13,7 +13,7 @@ const errorMessage = ref('')
 // Filter State
 const chargeTime = ref(30)
 const isEcoFriendly = ref(false) 
-const travelTime = ref(10) // Minutes, 10 min increments
+const travelTime = ref(5) // Minutes, 10 min increments
 const selectedCategory = ref([])
 const usePublicTransport = ref(false)
 const personnel = ref(1)
@@ -204,71 +204,80 @@ const handleOpenMap = () => {
         </button>
       </div>
 
-      <div class="filter-section">
-        <!-- Basic: Charge Time -->
-        <div class="filter-group">
-          <label>🕒 충전 시간 <span class="required">*</span></label>
-          <div class="counter-control">
-            <button @click="chargeTime > 5 ? chargeTime -= 5 : null">-</button>
-            <div class="input-wrapper">
-              <input type="number" v-model="chargeTime" class="time-input" />
-              <span>분</span>
+      <div class="filters-grid">
+        <!-- Row 1: Charge Time -->
+        <div class="filter-row standalone-row">
+          <div class="filter-group">
+            <label>🕒 충전 시간 <span class="required">*</span></label>
+            <div class="counter-control">
+               <button @click="chargeTime > 1 ? chargeTime-- : null">-</button>
+               <div class="input-wrapper">
+                 <input type="number" v-model="chargeTime" class="time-input" />
+                 <span>분</span>
+               </div>
+               <button @click="chargeTime++">+</button>
             </div>
-            <button @click="chargeTime += 5">+</button>
           </div>
         </div>
 
-        <!-- Expanded Filters -->
-        <div v-if="isExpandedSearch" class="expanded-filters">
-          <div class="filters-grid">
-            <!-- Row 1: Toggles & Counters -->
-            <div class="filter-row top-controls">
-              <div class="filter-group checkbox-group">
-                 <label>🌿 친환경 여부</label>
-                 <div class="checkbox-wrapper">
-                     <label class="checkbox-label">
-                       <input type="checkbox" v-model="isEcoFriendly" />
-                       포함
-                     </label>
-                 </div>
-              </div>
+        <template v-if="isExpandedSearch">
+          <!-- Row 2: Eco, Transport, Travel Time, Personnel (Equal spacing) -->
+          <div class="filter-row grid-row spacing-row">
+            <!-- Eco Friendly -->
+            <div class="filter-group checkbox-group">
+               <label>🌿 친환경 여부</label>
+               <div class="checkbox-wrapper">
+                   <label class="checkbox-label">
+                     <input type="checkbox" v-model="isEcoFriendly" />
+                     포함
+                   </label>
+               </div>
+            </div>
 
-               <div class="filter-group checkbox-group">
-                <label>🚌 대중교통</label>
-                <div class="checkbox-wrapper">
-                  <label class="checkbox-label">
-                    <input type="checkbox" v-model="usePublicTransport" />
-                    이용 가능
-                  </label>
-                </div>
-              </div>
-
-              <div class="filter-group">
-                <label>⏱️ 이동 시간</label>
-                <div class="counter-control">
-                  <button @click="travelTime > 10 ? travelTime -= 10 : null">-</button>
-                  <div class="input-wrapper">
-                    <input type="number" v-model="travelTime" class="time-input" />
-                    <span>분</span>
-                  </div>
-                  <button @click="travelTime += 10">+</button>
-                </div>
-              </div>
-
-              <div class="filter-group">
-                <label>👥 인원</label>
-                <div class="counter-control">
-                  <button @click="personnel > 1 ? personnel-- : null">-</button>
-                  <div class="input-wrapper">
-                    <input type="number" v-model="personnel" class="time-input" />
-                    <span>명</span>
-                  </div>
-                  <button @click="personnel++">+</button>
-                </div>
+            <!-- Public Transport -->
+             <div class="filter-group checkbox-group">
+              <label>🚌 대중교통</label>
+              <div class="checkbox-wrapper">
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="usePublicTransport" />
+                  이용 가능
+                </label>
               </div>
             </div>
 
-            <!-- Row 2: Purpose -->
+            <!-- Travel Time -->
+            <div class="filter-group">
+              <label>⏱️ 이동 시간</label>
+              <div class="counter-control">
+                <button @click="travelTime > 1 ? travelTime-- : null">-</button>
+                <div class="input-wrapper">
+                  <input type="number" v-model="travelTime" class="time-input" />
+                  <span>분</span>
+                </div>
+                <button @click="travelTime++">+</button>
+              </div>
+            </div>
+
+            <!-- Personnel -->
+            <div class="filter-group">
+              <label>👥 인원</label>
+              <div class="counter-control">
+                <button @click="personnel > 1 ? personnel-- : null">-</button>
+                <div class="input-wrapper">
+                  <input type="number" v-model="personnel" class="time-input" />
+                  <span>명</span>
+                </div>
+                <button @click="personnel++">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Section Divider -->
+          <div class="section-divider"></div>
+
+          <!-- Detailed Search Content (Purpose, Place, Preference) -->
+          <div class="expanded-filters-content">
+            <!-- Row 4: Purpose -->
             <div class="filter-group full-width">
                <label>🎯 목적</label>
                <div class="chip-group">
@@ -284,7 +293,7 @@ const handleOpenMap = () => {
                </div>
             </div>
             
-            <!-- Row 3: Place -->
+            <!-- Row 5: Place -->
             <div class="filter-group full-width">
                <label>🏢 장소</label>
                <div class="chip-group">
@@ -300,7 +309,7 @@ const handleOpenMap = () => {
                </div>
             </div>
 
-            <!-- Row 4: Preference -->
+            <!-- Row 6: Preference -->
             <div class="filter-group full-width">
                <label>✨ 상세 선호도 (직접 입력)</label>
                <input 
@@ -311,7 +320,7 @@ const handleOpenMap = () => {
                />
             </div>
           </div>
-        </div>
+        </template>
       </div>
 
       <!-- Location Status -->
@@ -348,7 +357,7 @@ const handleOpenMap = () => {
           <span class="info-text">충전 시간 {{ chargeTime }}분 기준</span>
         </div>
 
-        <div v-if="recommendations.length > 0" class="cards-grid">
+        <TransitionGroup name="list" tag="div" v-if="recommendations.length > 0" class="cards-grid">
           <div v-for="item in recommendations" :key="item.id" class="place-card">
             <div class="card-top">
               <div class="icon-area">{{ item.icon }}</div>
@@ -380,7 +389,7 @@ const handleOpenMap = () => {
               <span class="arrow">></span>
             </div>
           </div>
-        </div>
+        </TransitionGroup>
 
         <div v-else class="empty-state">
           <div class="empty-icon">🏜️</div>
@@ -422,9 +431,29 @@ const handleOpenMap = () => {
 
 <style scoped>
 .activity-container {
-  max-width: 1000px;
+  max-width: 1100px;
+  width: 100%;
+  height: 100%;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  scrollbar-gutter: stable;
+}
+
+/* Custom Scrollbar for premium feel */
+.activity-container::-webkit-scrollbar {
+  width: 6px;
+}
+.activity-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.activity-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.activity-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .header-section {
@@ -444,12 +473,18 @@ h1 {
 
 /* Search Card */
 .search-card {
-  background-color: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
-  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  margin-bottom: 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.search-card:hover {
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.06);
 }
 
 .card-header {
@@ -473,20 +508,63 @@ h1 {
   cursor: pointer;
 }
 
-.filter-section {
+.filters-grid {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.filter-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.flex-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.filter-group-set {
+  display: flex;
+  gap: 5rem; /* Wide gap between items within a set */
+  align-items: flex-end;
+}
+
+.standalone-row {
   margin-bottom: 2rem;
+}
+
+.grid-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem; /* Reduced from 2rem */
+  align-items: flex-end;
+  padding-bottom: 0.25rem;
+}
+
+.section-divider {
+  width: 100%;
+  height: 1px;
+  background-color: #f3f4f6;
+  margin: 0 0 0.5rem 0; /* Reduced bottom margin from 1.5rem to 0.5rem */
+}
+
+.expanded-filters-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Slightly reduced gap */
 }
 
 .counter-control {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #f3f4f6;
+  background-color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 9999px; /* Pill shape */
+  border-radius: 9999px;
   width: fit-content;
   border: 1px solid #e5e7eb;
 }
@@ -495,36 +573,31 @@ h1 {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: none;
+  border: 1px solid #e5e7eb;
   background-color: white;
-  color: #374151;
-  font-weight: bold;
+  color: #6b7280;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   transition: all 0.2s;
 }
 
 .counter-control button:hover {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.counter-control button:active {
-  transform: scale(0.95);
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
 
 .input-wrapper {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin: 0 0.5rem;
+  margin: 0 0.75rem;
 }
 
 .time-input {
-  width: 44px;
+  width: 32px;
   text-align: center;
   border: none;
   background: transparent;
@@ -533,8 +606,8 @@ h1 {
   font-weight: 700;
   color: #1f2937;
   outline: none;
-  /* Hide number arrows */
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .time-input::-webkit-outer-spin-button,
@@ -543,22 +616,39 @@ h1 {
   margin: 0;
 }
 
-.input-wrapper span {
-  font-weight: 500;
-  color: #6b7280;
-  font-size: 0.95rem;
-}
-
 .filter-group label {
   display: block;
   font-weight: 600;
-  color: #4b5563;
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
+  color: #1f2937;
+  margin-bottom: 0.875rem; /* Reduced from 1.25rem */
+  font-size: 0.85rem; /* Reduced from 0.9rem */
 }
 
 .required {
   color: #ef4444;
+}
+
+.checkbox-wrapper {
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.checkbox-label input {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
 }
 
 .chip-group {
@@ -576,10 +666,6 @@ h1 {
   cursor: pointer;
   transition: all 0.2s;
   font-size: 0.9rem;
-}
-
-.chip:hover {
-  background-color: #e5e7eb;
 }
 
 .chip.active {
@@ -600,29 +686,92 @@ h1 {
   outline: none;
 }
 
-.preference-input:focus {
-  border-color: #0055d4;
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(0, 85, 212, 0.1);
-}
-
 .search-btn {
   width: 100%;
   background-color: #0055d4;
   color: white;
-  padding: 1rem;
+  padding: 0.875rem; /* Reduced from 1.125rem */
   border-radius: 12px;
   border: none;
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-weight: 700;
+  font-size: 1.05rem; /* Reduced from 1.15rem */
   cursor: pointer;
+  margin-top: 1rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 85, 212, 0.2);
 }
 
-.search-btn:hover {
+.search-btn:hover:not(:disabled) {
   background-color: #0044aa;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px -2px rgba(0, 85, 212, 0.3);
 }
 
 /* Results */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); /* Reduced from 300px */
+  gap: 1.5rem; /* Reduced from 2rem */
+}
+
+.place-card {
+  background-color: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 18px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.place-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: #3b82f633;
+}
+
+.place-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #3b82f6;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.place-card:hover::after {
+  opacity: 1;
+}
+
+.description {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 3rem;
+}
+
+.meta-info {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Results Header */
 .results-header {
   display: flex;
   justify-content: space-between;
@@ -639,28 +788,6 @@ h1 {
 .info-text {
   color: #6b7280;
   font-size: 0.9rem;
-}
-
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem; /* Increased gap to prevent overlap */
-}
-
-.place-card {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.place-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 .card-top {
@@ -705,27 +832,6 @@ h1 {
   font-size: 0.9rem;
 }
 
-.description {
-  color: #4b5563;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  height: 3rem; /* Fixed height for consistency */
-}
-
-.meta-info {
-  color: #6b7280;
-  font-size: 0.85rem;
-  margin-bottom: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
 .meta-item {
   display: flex;
   align-items: center;
@@ -754,8 +860,8 @@ h1 {
   text-decoration: underline;
 }
 
-/* Empty State */
-.empty-state {
+/* Empty & Loading States */
+.empty-state, .loading-state {
   background-color: white;
   border-radius: 16px;
   padding: 4rem 2rem;
@@ -780,18 +886,6 @@ h1 {
   color: #9ca3af;
 }
 
-/* Loading State */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  background-color: white;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-}
-
 .loader {
   width: 48px;
   height: 48px;
@@ -799,7 +893,7 @@ h1 {
   border-top: 4px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 1.5rem;
+  margin: 0 auto 1.5rem;
 }
 
 @keyframes spin {
@@ -818,42 +912,6 @@ h1 {
   color: #9ca3af;
 }
 
-/* Error State */
-.error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 2rem;
-  text-align: center;
-}
-
-.error-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.error-message {
-  color: #ef4444;
-  font-weight: 500;
-  margin-bottom: 1.5rem;
-}
-
-.retry-btn {
-  background-color: #f3f4f6;
-  border: 1px solid #d1d5db;
-  padding: 0.5rem 1.5rem;
-  border-radius: 8px;
-  color: #374151;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.retry-btn:hover {
-  background-color: #e5e7eb;
-}
-
 /* Location Status Bar */
 .location-status-bar {
   display: flex;
@@ -862,8 +920,9 @@ h1 {
   padding: 0.875rem 1rem;
   background-color: #f9fafb;
   border-radius: 12px;
+  margin-top: 2.5rem;    /* Added gap from preference input */
   margin-bottom: 1.5rem;
-  border: 1px dashed #d1d5db;
+  border: 1px solid #e5e7eb;
 }
 
 .location-info {
@@ -910,9 +969,18 @@ h1 {
   cursor: not-allowed;
 }
 
-.search-btn:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
+/* List Animations */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+.list-enter-from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+.list-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
 }
 
 /* Responsive */
@@ -920,48 +988,5 @@ h1 {
   .cards-grid {
     grid-template-columns: 1fr;
   }
-}
-
-
-
-/* Grid Layout for Detailed Search */
-.filters-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.top-controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.filter-group.full-width {
-  width: 100%;
-}
-
-.checkbox-wrapper {
-  height: 40px; /* Match counter height */
-  display: flex;
-  align-items: center;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.checkbox-label input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
 }
 </style>

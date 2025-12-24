@@ -18,5 +18,6 @@ public interface UserRepository {
     int insert(User user);
 
     int disableUser(@Param("userId") Long userId);
-}
 
+    int updateStatus(@Param("userId") Long userId, @Param("status") String status);
+}

@@ -155,7 +155,7 @@ const isCharging = computed(() => props.user && props.user.status === 'CHARGING'
 .user-area {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.75rem; /* Reduced from 1.5rem */
 }
 
 .login-btn {
@@ -184,7 +184,6 @@ const isCharging = computed(() => props.user && props.user.status === 'CHARGING'
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    margin-left: 0.5rem;
 }
 
 .signup-btn:hover {

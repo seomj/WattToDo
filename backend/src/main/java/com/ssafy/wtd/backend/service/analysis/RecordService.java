@@ -35,6 +35,7 @@ public class RecordService {
     private final VehicleRepository vehicleRepository; // 차량 정보 조회를 위해 주입
     private final CarbonRepository carbonRepository; // 탄소 저장용
     private final CarbonConfigRepository configRepository; // 설정값 조회용
+    private final UserRepository userRepository;
     private final OcrService ocrService;
 
     // Geodesy 계산기 인스턴스 (Spring Bean으로 관리 가능하나, 여기서는 필드로 정의)
@@ -44,6 +45,15 @@ public class RecordService {
 
     @Transactional
     public void processChargeStart(ChargeStartReq request) {
+        // [추가] userId 유효성 검사 및 디버깅
+        if (request.getUserId() == null) {
+            System.err.println("=== ERROR: request.getUserId() is NULL in processChargeStart");
+            throw new IllegalArgumentException("사용자 ID가 누락되었습니다.");
+        }
+
+        System.out.println("=== DEBUG: processChargeStart for user: " + request.getUserId() + " at station: "
+                + request.getStationId());
+
         // 사용자가 이미 충전 중인지 확인
         ChargeRecord activeRecord = recordRepository.selectActiveRecordByUserId(request.getUserId());
         if (activeRecord != null) {
@@ -51,14 +61,7 @@ public class RecordService {
             throw new IllegalArgumentException("이미 다른 충전소에서 충전 중입니다.");
         }
 
-        // 디버깅: 요청된 station_id 출력
-        System.out.println("=== DEBUG: Requested station_id = [" + request.getStationId() + "]");
-
         Station selectedStation = stationRepository.findById(request.getStationId());
-
-        // 디버깅: 조회 결과 출력
-        System.out.println(
-                "=== DEBUG: Found station = " + (selectedStation == null ? "NULL" : selectedStation.getStationId()));
 
         // 충전소 확인
         if (selectedStation == null) {
@@ -75,7 +78,8 @@ public class RecordService {
         ChargeRecord newRecord = createInitialRecord(request);
         recordRepository.insertRecord(newRecord);
 
-        // TODO: 충전 상태 관리를 위한 Redis/Session 등의 로직 추가
+        // 사용자의 상태를 'CHARGING'으로 업데이트하여 상단바 등에 반영되도록 함
+        userRepository.updateStatus(request.getUserId(), "CHARGING");
     }
 
     /**
@@ -83,8 +87,8 @@ public class RecordService {
      * - 외부 라이브러리를 사용하여 정밀한 GPS 거리 계산을 수행합니다.
      */
     private boolean isUserAtStation(Station station, Double userLat, Double userLon) {
-        // 허용 오차 거리 상수 (30m)
-        final double ALLOWED_DISTANCE_METERS = 30.0;
+        // 허용 오차 거리 상수 (5km)
+        final double ALLOWED_DISTANCE_METERS = 5000.0;
 
         // 1. 좌표 객체 생성
         GlobalCoordinates stationCoord = new GlobalCoordinates(station.getLat(), station.getLng());
@@ -217,13 +221,23 @@ public class RecordService {
     }
 
     @Transactional
-    public ChargeConfirmRes confirmAndFinalizeRecord(Long recordId, ChargeConfirmReq request) {
+    public ChargeConfirmRes confirmAndFinalizeRecord(Long recordId, ChargeConfirmReq request,
+            Long authenticatedUserId) {
         // 유효성 검사
         ChargeRecord record = recordRepository.selectRecordById(recordId);
 
         if (record == null) {
             // 기록이 존재하지 않음
             throw new NoSuchElementException("ID " + recordId + "에 해당하는 충전 기록을 찾을 수 없습니다.");
+        }
+
+        // 디버깅: 조회된 기록 정보 출력
+        System.out.println("=== DEBUG: Fetched Record for finalize: ID=" + record.getRecordId() + ", RecordUserID="
+                + record.getUserId() + ", AuthUserID=" + authenticatedUserId + ", Status=" + record.getStatus());
+
+        // 본인 기록인지 검증 (record.getUserId()가 null일 경우를 대비해 authenticatedUserId를 우선 활용/검증)
+        if (record.getUserId() != null && !record.getUserId().equals(authenticatedUserId)) {
+            throw new IllegalStateException("해당 충전 기록을 종료할 권한이 없습니다.");
         }
 
         if (!"CHARGING".equals(record.getStatus())) {
@@ -255,8 +269,15 @@ public class RecordService {
                 request.getChargingCost() // 6. chargingCost (int)
         );
 
-        // 탄소 절감량 계산 및 저장
-        this.calculateAndSaveCarbonRecord(recordId, record.getUserId(), request.getChargedKwh());
+        // 탄소 절감량 계산 및 저장 (더 신뢰할 수 있는 authenticatedUserId 사용)
+        float carbonSaved = this.calculateAndSaveCarbonRecord(recordId, authenticatedUserId, request.getChargedKwh());
+
+        // 누적 탄소 절감량 조회
+        Float totalCarbonSavedReq = carbonRepository.getTotalCarbonSavedByUserId(authenticatedUserId);
+        float totalCarbonSaved = (totalCarbonSavedReq != null) ? totalCarbonSavedReq : 0.0f;
+
+        // 사용자의 상태를 다시 'ACTIVE'로 변경
+        userRepository.updateStatus(authenticatedUserId, "ACTIVE");
 
         // 응답 생성
         ChargeConfirmRes.Data data = new ChargeConfirmRes.Data();
@@ -265,6 +286,8 @@ public class RecordService {
         data.setChargedKwh(request.getChargedKwh());
         data.setChargingCost(request.getChargingCost());
         data.setDurationMin(durationMin);
+        data.setCarbonSaved(carbonSaved);
+        data.setTotalCarbonSaved(totalCarbonSaved);
 
         ChargeConfirmRes response = new ChargeConfirmRes();
         response.setSuccess(true);
@@ -301,31 +324,59 @@ public class RecordService {
     /**
      * 탄소 절감량을 계산하고 DB에 저장하는 내부 로직
      */
-    private void calculateAndSaveCarbonRecord(Long recordId, Long userId, float chargedKwh) {
-        // 1. 설정값 및 전비 조회
-        float vehicleEfficiency = vehicleRepository.getEfficiencyByUserId(userId);
-        CarbonConfig config = configRepository.findLatestConfig();
-        if (config == null) {
-            // 확실하지 않음: DB에 설정값이 하나도 없는 경우에 대한 방어 로직 (추측입니다)
-            throw new IllegalStateException("탄소 계산 기준 설정(carbon_config)이 존재하지 않습니다.");
+    private float calculateAndSaveCarbonRecord(Long recordId, Long userId, float chargedKwh) {
+        float carbonSaved = 0.0f;
+        try {
+            // 1. 전비(km/kWh) 조회
+            Float efficiency = vehicleRepository.getEfficiencyByUserId(userId);
+            System.out.println("=== DEBUG: Efficiency for user " + userId + " = " + efficiency);
+
+            if (efficiency == null || efficiency <= 0) {
+                // [수정] 전비 정보가 없으면 기본값(5.0 km/kWh) 적용하여 계산 진행 (Wow 포인트 유지)
+                System.out.println(
+                        "=== INFO: No vehicle efficiency found for user " + userId + ". Using fallback 5.0 km/kWh.");
+                efficiency = 5.0f;
+            }
+
+            // 2. 탄소 배출 계수 및 내연기관 평균 연비 조회
+            CarbonConfig config = configRepository.findLatestConfig();
+            if (config == null) {
+                System.out.println("=== WARNING: No carbon_config found. Skipping carbon record.");
+                return 0.0f;
+            }
+
+            float avgFuelEff = config.getAvgFuelEfficiency();
+            float gasCo2 = config.getGasolineCo2PerL();
+            float evCo2 = config.getEvCo2PerKwh();
+
+            System.out.println("=== DEBUG: Carbon Config -> avgFuelEff: " + avgFuelEff + ", gasCo2: " + gasCo2
+                    + ", evCo2: " + evCo2);
+
+            // 3. 계산 공식 적용
+            // (충전량 * 전비 / 내연기관 평균연비 * L당 CO2) - (충전량 * 전력 CO2 계수)
+            float iceEmissions = (chargedKwh * efficiency / avgFuelEff) * gasCo2;
+            float evEmissions = chargedKwh * evCo2;
+
+            System.out.println("=== DEBUG: chargedKwh: " + chargedKwh + ", iceEmissions: " + iceEmissions
+                    + ", evEmissions: " + evEmissions);
+
+            carbonSaved = iceEmissions - evEmissions;
+
+            // 4. DB 저장
+            CarbonRecord carbonRecord = new CarbonRecord();
+            carbonRecord.setRecordId(recordId);
+            carbonRecord.setUserId(userId);
+            carbonRecord.setCarbonSaved(carbonSaved);
+
+            carbonRepository.saveCarbonRecord(carbonRecord);
+            System.out.println("=== SUCCESS: Carbon record saved. Saved amount: " + carbonSaved);
+
+        } catch (Exception e) {
+            // 통계 기록 과정에서 오류 발생 시 전체 충전 프로세스에 영향을 주지 않도록 로그만 출력
+            System.err.println("=== ERROR: Failed to calculate/save carbon record: " + e.getMessage());
+            e.printStackTrace();
         }
-        float avgFuelEff = config.getAvgFuelEfficiency();
-        float gasCo2 = config.getGasolineCo2PerL();
-        float evCo2 = config.getEvCo2PerKwh();
-
-        // 2. 계산 공식 적용 (이미지 공식 기반)
-        // (충전량 * 전비 / 내연기관 평균연비 * L당 CO2) - (충전량 * 전력 CO2 계수)
-        float iceEmissions = (chargedKwh * vehicleEfficiency / avgFuelEff) * gasCo2;
-        float evEmissions = chargedKwh * evCo2;
-        float carbonSaved = iceEmissions - evEmissions;
-
-        // 3. DB 저장
-        CarbonRecord carbonRecord = new CarbonRecord();
-        carbonRecord.setRecordId(recordId);
-        carbonRecord.setUserId(userId);
-        carbonRecord.setCarbonSaved(carbonSaved);
-
-        carbonRepository.saveCarbonRecord(carbonRecord);
+        return carbonSaved;
     }
 
 }

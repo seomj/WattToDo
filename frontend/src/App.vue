@@ -6,7 +6,10 @@ import ActivityView from './views/ActivityView.vue';
 import LoginView from './views/LoginView.vue';
 import SignupView from './views/SignupView.vue';
 import MyPageView from './views/MyPageView.vue';
+import ChargingModal from './components/ChargingModal.vue';
+import CustomAlert from './components/CustomAlert.vue';
 import axios from 'axios';
+import { provide } from 'vue';
 
 const currentView = ref('HOME');
 const targetStationId = ref(null);
@@ -66,6 +69,38 @@ watch(user, (newUser) => {
     }
 });
 
+const handleStatusUpdate = (status) => {
+    if (user.value) {
+        user.value.status = status;
+    }
+};
+
+const showChargingModal = ref(false);
+
+const alertState = ref({
+    show: false,
+    title: '',
+    message: '',
+    stats: null,
+    emoji: null
+});
+
+const showAlert = (options) => {
+    alertState.value = {
+        show: true,
+        title: options.title || '알림',
+        message: options.message || '',
+        stats: options.stats || null,
+        emoji: options.emoji || null
+    };
+};
+
+const closeAlert = () => {
+    alertState.value.show = false;
+};
+
+provide('showAlert', showAlert);
+
 // Restore Session on Mount
 onMounted(async () => {
     const token = localStorage.getItem('accessToken');
@@ -93,6 +128,7 @@ onMounted(async () => {
       :current-view="currentView"
       @navigate="handleNavigate"
       @logout="handleLogout"
+      @open-charging-modal="showChargingModal = true"
     />
     <main class="main-body">
       <component 
@@ -104,8 +140,24 @@ onMounted(async () => {
         @logout="handleLogout"
         @withdraw="handleWithdrawSuccess"
         @update-user="handleUpdateUser"
+        @status-updated="handleStatusUpdate"
       />
     </main>
+
+    <ChargingModal 
+      :show="showChargingModal"
+      @close="showChargingModal = false"
+      @analyze="showChargingModal = false; handleStatusUpdate('ACTIVE')"
+    />
+
+    <CustomAlert 
+      :show="alertState.show"
+      :title="alertState.title"
+      :message="alertState.message"
+      :stats="alertState.stats"
+      :emoji="alertState.emoji"
+      @close="closeAlert"
+    />
   </div>
 </template>
 

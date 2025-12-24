@@ -28,33 +28,38 @@ public class RecordController {
 
     @GetMapping("/me")
     public ResponseEntity<?> getMyChargeRecords(Authentication authentication) {
-        if (authentication == null) return ResponseEntity.status(401).body("로그인이 필요합니다.");
-        
+        if (authentication == null)
+            return ResponseEntity.status(401).body("로그인이 필요합니다.");
+
         User user = userRepository.findByEmail(authentication.getName());
-        if (user == null) return ResponseEntity.status(404).body("사용자를 찾을 수 없습니다.");
+        if (user == null)
+            return ResponseEntity.status(404).body("사용자를 찾을 수 없습니다.");
 
         List<ChargeRecord> records = chargeRecordRepository.findAllByUserId(user.getUserId());
         return ResponseEntity.ok(records);
     }
 
-    // 충전 시작 및 위치 확인 로직을 처리하는 API
-    // POST /api/v1/charge-records/start
-    @PostMapping("")
-    public ResponseEntity<?> startCharging(@RequestBody ChargeStartReq request) {
-        // 1. 요청 데이터를 서비스로 전달하여 로직 처리
-        // 2. 서비스 결과에 따라 응답 결정
-        try {
-            recordService.processChargeStart(request);
-            // 성공 시, 클라이언트에 충전 중 상태를 업데이트하도록 신호 전달
-            return ResponseEntity.ok().body("{\"message\": \"Charging started successfully\"}");
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-            // 위치 불일치 등 예외 발생 시 에러 메시지 반환
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Internal server error");
+    // 충전 시작 API
+    // POST /charge-records/start
+    @PostMapping("/start")
+    public ResponseEntity<Void> startCharging(
+            @RequestBody ChargeStartReq request,
+            Authentication authentication) {
+
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
         }
+
+        User user = userRepository.findByEmail(authentication.getName());
+        if (user == null) {
+            return ResponseEntity.status(404).build();
+        }
+
+        // 프론트에서 보낸 userId 대신 인증된 정보의 ID 사용 (보안 및 정확성)
+        request.setUserId(user.getUserId());
+
+        recordService.processChargeStart(request);
+        return ResponseEntity.ok().build();
     }
 
     // 영수증 이미지 업로드 & AI 파싱 API
@@ -73,10 +78,15 @@ public class RecordController {
     // POST /charge-records/{recordId}/confirm
     @PostMapping("/{recordId}/confirm")
     public ResponseEntity<ChargeConfirmRes> confirmParsedResult(
-            @PathVariable Long recordId,
-            @RequestBody ChargeConfirmReq request) { // 변경된 DTO 이름 적용
+            @PathVariable("recordId") Long recordId,
+            @RequestBody ChargeConfirmReq request,
+            Authentication authentication) {
 
-        ChargeConfirmRes response = recordService.confirmAndFinalizeRecord(recordId, request);
+        User user = userRepository.findByEmail(authentication.getName());
+        if (user == null)
+            return ResponseEntity.status(404).body(null);
+
+        ChargeConfirmRes response = recordService.confirmAndFinalizeRecord(recordId, request, user.getUserId());
 
         return ResponseEntity.ok(response);
     }

@@ -1,6 +1,8 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed, inject } from 'vue';
 import axios from 'axios';
+import StartChargingModal from './StartChargingModal.vue';
+import ChargingModal from './ChargingModal.vue';
 
 const props = defineProps({
   show: Boolean,
@@ -8,18 +10,21 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  isLoggedIn: {
-    type: Boolean,
-    default: false
+  user: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'status-updated']);
+
+const showAlert = inject('showAlert');
 
 const isFavorite = ref(false);
+const isLoggedIn = computed(() => !!props.user);
 
 // Check favorite status when station or login state changes
-watch([() => props.station, () => props.isLoggedIn], async ([newStation, loggedIn]) => {
+watch([() => props.station, isLoggedIn], async ([newStation, loggedIn]) => {
     if (loggedIn && newStation && newStation.stationId) {
         try {
             const token = localStorage.getItem('accessToken');
@@ -39,8 +44,8 @@ watch([() => props.station, () => props.isLoggedIn], async ([newStation, loggedI
 const toggleFavorite = async () => {
     if (!props.station) return;
     
-    if (!props.isLoggedIn) {
-        alert("로그인이 필요한 기능입니다.");
+    if (!isLoggedIn.value) {
+        showAlert({ title: '로그인 필요', message: "로그인이 필요한 기능입니다.", emoji: '🔒' });
         return;
     }
 
@@ -51,10 +56,10 @@ const toggleFavorite = async () => {
         });
         
         isFavorite.value = response.data.isFavorite;
-        alert(response.data.message);
+        showAlert({ title: '즐겨찾기', message: response.data.message, emoji: '⭐' });
     } catch (error) {
         console.error("Failed to toggle favorite:", error);
-        alert("즐겨찾기 처리 중 오류가 발생했습니다.");
+        showAlert({ title: '오류', message: "즐겨찾기 처리 중 오류가 발생했습니다.", emoji: '⚠️' });
     }
 };
 
@@ -86,6 +91,141 @@ const getStatusText = (status) => {
      if (s === '3' || s === 'CHARGING') return '충전중';
      if (s === '0' || s === '2' || s === 'AVAILABLE' || s === 'WAIT') return '사용 가능';
      return '사용 불가';
+};
+
+// Charging Logic
+const showStartModal = ref(false);
+const showStopModal = ref(false);
+const isUserCharging = computed(() => props.user && props.user.status === 'CHARGING');
+const activeStationId = ref(null);
+
+watch(() => props.show, async (newVal) => {
+    if (newVal && props.user && props.user.status === 'CHARGING') {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await axios.get('http://localhost:8080/charge-records/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const activeRecord = response.data.find(r => r.status === 'CHARGING');
+            if (activeRecord) {
+                activeStationId.value = activeRecord.stationId;
+            } else {
+                activeStationId.value = null;
+            }
+        } catch (error) {
+            console.error("Failed to fetch active record:", error);
+            activeStationId.value = null;
+        }
+    } else if (!newVal) {
+        activeStationId.value = null;
+    }
+}, { immediate: true });
+
+const handleStartChargeClick = async () => {
+    if (!props.user) {
+        showAlert({ title: '로그인 필요', message: "로그인 시에만 누를 수 있습니다.", emoji: '🔒' });
+        return;
+    }
+
+    if (isUserCharging.value) {
+        showAlert({ title: '충전 불가', message: "이미 다른 충전소에서 충전 중입니다. 무조건 한 사람당 하나의 충전만 진행할 수 있습니다.", emoji: '🚫' });
+        return;
+    }
+
+    // Geolocation Check
+    if (!navigator.geolocation) {
+        showAlert({ title: '위치 오류', message: "위치 정보를 사용할 수 없습니다.", emoji: '📍' });
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            
+            // Step 3-1 & 3-2: Location comparison
+            const distance = calculateDistance(
+                latitude, 
+                longitude, 
+                props.station.lat, 
+                props.station.lng
+            );
+
+            // 5km threshold for testing/usage convenience
+            console.log("=== Debug Location ===");
+            console.log("User Pos:", latitude, longitude);
+            console.log("Station Pos:", props.station.lat, props.station.lng);
+            console.log("Calculated Distance:", distance.toFixed(2), "m");
+
+            if (distance > 5000) {
+                showAlert({ 
+                    title: '위치 불일치', 
+                    message: `현재 위치가 선택한 충전소가 아닙니다. (계산된 거리: ${distance.toFixed(1)}m). 다시 확인해 주세요.`,
+                    emoji: '📍'
+                });
+                return; // Return to step 1 (keep modal open but stop flow)
+            }
+            
+            // 4. Open Input Form
+            showStartModal.value = true;
+        },
+        (error) => {
+            showAlert({ title: '위치 오류', message: "현재 위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.", emoji: '📍' });
+        }
+    );
+};
+
+// Helper to calculate distance in meters
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+          Math.cos(φ1) * Math.cos(φ2) *
+          Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // in metres
+};
+
+const submitStartCharge = async (formData) => {
+    try {
+        const token = localStorage.getItem('accessToken');
+        const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+
+        const response = await axios.post('http://localhost:8080/charge-records/start', {
+            stationId: props.station.stationId,
+            userLatitude: pos.coords.latitude,
+            userLongitude: pos.coords.longitude,
+            targetKwh: formData.targetKwh,
+            startKwh: formData.startKwh,
+            chargerCapacity: formData.chargerCapacity
+        }, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        showAlert({ title: '충전 시작!', message: "충전이 시작되었습니다. 안전한 충전 되세요!", emoji: '⚡' });
+        showStartModal.value = false;
+        // Update user status globally
+        emit('status-updated', 'CHARGING');
+    } catch (error) {
+        console.error("Failed to start charge:", error);
+        if (error.response && error.response.status === 401) {
+            showAlert({ title: '인증 만료', message: "로그인 세션이 만료되었습니다. 다시 로그인해주세요.", emoji: '🔑' });
+        } else if (error.response && error.response.data) {
+            showAlert({ title: '충전 시작 실패', message: error.response.data.message || error.response.data || "충전 시작에 실패했습니다.", emoji: '⚠️' });
+        } else {
+            showAlert({ title: '서버 오류', message: "서버 오류가 발생했습니다.", emoji: '⚠️' });
+        }
+    }
+};
+
+const handleStopChargingRequest = () => {
+    showStopModal.value = true;
 };
 </script>
 
@@ -123,6 +263,25 @@ const getStatusText = (status) => {
                     <span class="count blue">{{ getChargerCount(station.chargers, '급속') }}</span>
                 </div>
             </div>
+
+            <div class="station-actions">
+                <button 
+                  v-if="!isUserCharging"
+                  class="charge-btn-full start"
+                  @click="handleStartChargeClick()"
+                >
+                  충전 시작
+                </button>
+                <button 
+                  v-else-if="isUserCharging"
+                  class="charge-btn-full"
+                  :class="station.stationId === activeStationId ? 'stop' : 'disabled'"
+                  :disabled="station.stationId !== activeStationId"
+                  @click="handleStopChargingRequest"
+                >
+                  {{ station.stationId === activeStationId ? '충전 중 (종료하기)' : '이미 다른 곳에서 충전 중입니다' }}
+                </button>
+            </div>
         </div>
 
         <div class="section-divider"></div>
@@ -147,18 +306,28 @@ const getStatusText = (status) => {
 
                 <div class="connector-types">
                     <!-- Hardcoded icons for now -->
-                    <div class="connector active">
+                     <div class="connector active">
                         <div class="conn-icon">🔌</div>
                         <span>{{ charger.chargeType || '충전타입' }}</span>
                     </div>
                  </div>
-                 
-                 <div class="last-charge fa-pull-right">
-                     <!-- Date info might be missing in DTO, removing mock date -->
-                 </div>
             </div>
         </div>
       </div>
+
+      <!-- Internal Modals -->
+      <StartChargingModal 
+        :show="showStartModal" 
+        :station-name="station.stationName"
+        @close="showStartModal = false"
+        @start="submitStartCharge"
+      />
+
+      <ChargingModal 
+        :show="showStopModal"
+        @close="showStopModal = false"
+        @analyze="showStopModal = false; emit('status-updated', 'ACTIVE')"
+      />
     </div>
   </div>
 </template>
@@ -383,5 +552,70 @@ const getStatusText = (status) => {
     text-align: right;
     font-size: 0.8rem;
     color: #9ca3af;
+}
+
+.charger-actions {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.charge-btn {
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.charge-btn.start {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.charge-btn.start:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
+}
+
+.charge-btn.stop {
+    background-color: #16a34a;
+    color: white;
+}
+
+.station-actions {
+    margin-top: 1.5rem;
+}
+
+.charge-btn-full {
+    width: 100%;
+    padding: 0.875rem;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.charge-btn-full.start {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.charge-btn-full.start:hover {
+    background-color: #2563eb;
+}
+
+.charge-btn-full.stop {
+    background-color: #16a34a;
+    color: white;
+}
+
+.charge-btn-full.disabled {
+    background-color: #d1d5db;
+    color: white;
+    cursor: not-allowed;
 }
 </style>

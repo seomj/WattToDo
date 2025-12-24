@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted, inject } from 'vue';
 import axios from 'axios';
 import KakaoMap from '../components/KakaoMap.vue';
 import StationDetailModal from '../components/StationDetailModal.vue';
@@ -11,6 +11,8 @@ const selectedStation = ref(null);
 const searchResults = ref([]);
 const searchCount = ref(0);
 
+
+const showAlert = inject('showAlert');
 
 // Search State
 const keyword = ref('');
@@ -55,7 +57,7 @@ const handleSearch = async () => {
     else if (selectedCity.value && selectedDistrict.value) {
         url = `http://localhost:8080/stations/search?city=${selectedCity.value}&district=${selectedDistrict.value}`;
     } else {
-        alert("검색어를 입력하거나 지역을 선택해주세요.");
+        showAlert({ title: '검색 안내', message: "검색어를 입력하거나 지역을 선택해주세요.", emoji: '🔍' });
         return;
     }
 
@@ -188,8 +190,9 @@ const closeDetail = () => {
       <StationDetailModal 
           :show="showDetailModal" 
           :station="selectedStation"
-          :is-logged-in="!!user"
+          :user="user"
           @close="closeDetail"
+          @status-updated="(status) => $emit('status-updated', status)"
       />
     </div>
   </div>

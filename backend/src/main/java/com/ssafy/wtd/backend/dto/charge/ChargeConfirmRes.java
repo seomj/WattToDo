@@ -18,5 +18,7 @@ public class ChargeConfirmRes { // 최종 저장 후 결과
         private float chargedKwh;
         private int chargingCost;
         private float durationMin;
+        private float carbonSaved;
+        private float totalCarbonSaved;
     }
 }
