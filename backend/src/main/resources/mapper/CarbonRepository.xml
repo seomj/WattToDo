@@ -7,4 +7,10 @@
         VALUES (#{recordId}, #{userId}, #{carbonSaved}, NOW())
     </insert>
 
+    <select id="getTotalCarbonSavedByUserId" resultType="java.lang.Float">
+        SELECT COALESCE(SUM(carbon_saved), 0)
+        FROM carbon_record
+        WHERE user_id = #{userId}
+    </select>
+
 </mapper>

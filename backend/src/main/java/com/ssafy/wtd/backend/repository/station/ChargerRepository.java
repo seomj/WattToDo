@@ -9,8 +9,7 @@ public interface ChargerRepository {
     void saveOrUpdate(
             @Param("chargerId") String chargerId,
             @Param("stationId") String stationId,
-            @Param("chargerName") String chargerName,
             @Param("status") int status,
-            @Param("chargeType") String chargeType
-    );
+            @Param("powerType") String powerType,
+            @Param("chargerType") String chargerType);
 }

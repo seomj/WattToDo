@@ -4,6 +4,8 @@ import ActivityDetailModal from '../components/ActivityDetailModal.vue'
 import MapModal from '../components/MapModal.vue'
 import { getRecommendations, getEstimatedTime } from '../api/activity'
 
+const props = defineProps(['user'])
+
 const isExpandedSearch = ref(false)
 const recommendations = ref([])
 const hasSearched = ref(false)
@@ -337,8 +339,13 @@ const handleOpenMap = () => {
         </button>
       </div>
 
-      <button class="search-btn" @click="handleSearch" :disabled="isLocating || isLoading">
+      <button 
+        class="search-btn" 
+        @click="handleSearch" 
+        :disabled="isLocating || isLoading || !user || user.status !== 'CHARGING'"
+      >
         <template v-if="isLoading">✨ AI가 장소를 찾는 중...</template>
+        <template v-else-if="!user || user.status !== 'CHARGING'">🔋 충전을 시작하면 장소를 추천해드려요</template>
         <template v-else>🔍 AI 추천 받기</template>
       </button>
     </div>

@@ -13,21 +13,22 @@
         INSERT INTO charger (
         charger_id,
         station_id,
-        charger_name,
         status,
-        charge_type
+        power_type,
+        charger_type
         )
         VALUES (
         #{chargerId},
         #{stationId},
-        #{chargerName},
         #{status},
-        #{chargeType}
+        #{powerType},
+        #{chargerType}
         )
         ON DUPLICATE KEY UPDATE
-        charger_name = VALUES(charger_name),
+        station_id   = VALUES(station_id),
         status       = VALUES(status),
-        charge_type  = VALUES(charge_type)
+        power_type   = VALUES(power_type),
+        charger_type = VALUES(charger_type)
     </insert>
 
 </mapper>

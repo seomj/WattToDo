@@ -90,5 +90,8 @@ public class EnvEvChargerRes {
 
         @JsonProperty("note")
         private String note;
+
+        @JsonProperty("powerType")
+        private String powerType;
     }
 }

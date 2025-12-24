@@ -9,9 +9,8 @@ import lombok.NoArgsConstructor;
 public class ChargerSummaryDto {
 
     private String chargerId;
-    private String chargerName;
-
-    private String chargeType;
+    private String powerType;
+    private String chargerType;
     private String status;
 
     private String statusLabel;
@@ -20,15 +19,14 @@ public class ChargerSummaryDto {
     // Service에서 최종 응답용 DTO를 만들 때만 사용하는 생성자
     public ChargerSummaryDto(
             String chargerId,
-            String chargerName,
-            String chargeType,
+            String powerType,
+            String chargerType,
             String status,
             String statusLabel,
-            String markerColor
-    ) {
+            String markerColor) {
         this.chargerId = chargerId;
-        this.chargerName = chargerName;
-        this.chargeType = chargeType;
+        this.powerType = powerType;
+        this.chargerType = chargerType;
         this.status = status;
         this.statusLabel = statusLabel;
         this.markerColor = markerColor;

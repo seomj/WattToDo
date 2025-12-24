@@ -28,8 +28,8 @@
 
         SELECT
         charger_id   AS chargerId,
-        charger_name AS chargerName,
-        charge_type  AS chargeType,
+        power_type   AS powerType,
+        charger_type AS chargerType,
         status       AS status
         FROM charger
         WHERE station_id = #{stationId}

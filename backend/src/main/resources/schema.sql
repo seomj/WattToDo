@@ -53,8 +53,8 @@ CREATE TABLE charger (
     charger_id VARCHAR(20) PRIMARY KEY,     -- 충전기 고유 ID
     station_id VARCHAR(20) NOT NULL,        -- charging_station FK
 
-    charger_name VARCHAR(50),               -- 충전기 번호(현장 표기 1번, 2번 등)
-    charge_type VARCHAR(20) NOT NULL,        -- 충전 타입 (AC, DC, FAST 등)
+    power_type VARCHAR(20) NOT NULL,        -- 충전 분류 (완속, 급속)
+    charger_type VARCHAR(50) NOT NULL,      -- 상세 충전 타입 (DC콤보, AC완속 등)
 
     status INT NOT NULL,                    -- 0=정상, 1=고장, 2=점검, 3=사용중
 

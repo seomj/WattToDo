@@ -99,5 +99,12 @@
         )
     </insert>
 
+    <update id="updateStatus">
+        UPDATE user
+        SET
+        status = #{status},
+        updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
 
 </mapper>

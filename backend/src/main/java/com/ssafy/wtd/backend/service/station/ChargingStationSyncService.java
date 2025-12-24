@@ -52,19 +52,16 @@ public class ChargingStationSyncService {
                         item.getStatNm(),
                         item.getAddr(),
                         Double.parseDouble(item.getLat()),
-                        Double.parseDouble(item.getLng())
-                );
+                        Double.parseDouble(item.getLng()));
 
-                // =========================
                 // 2. 충전기 upsert
                 // =========================
                 chargerRepository.saveOrUpdate(
                         item.getStatId() + "_" + item.getChgerId(), // charger_id
-                        item.getStatId(),                            // station_id
-                        item.getChgerNm(),
+                        item.getStatId(), // station_id
                         parseStatus(item.getStat()),
-                        parseChargeType(item.getChgerType())
-                );
+                        parsePowerType(item.getPowerType(), item.getChgerType()),
+                        parseDetailedChargerType(item.getChgerType()));
             }
 
             pageNo++;
@@ -83,13 +80,14 @@ public class ChargingStationSyncService {
      * 5 = 점검중
      */
     private int parseStatus(String stat) {
-        if (stat == null) return 1;
+        if (stat == null)
+            return 1;
 
         return switch (stat) {
             case "2" -> 0; // 정상 (사용 가능)
             case "3" -> 3; // 사용중
             case "5" -> 2; // 점검
-            default -> 1;  // 고장 / 통신이상
+            default -> 1; // 고장 / 통신이상
         };
     }
 
@@ -97,14 +95,48 @@ public class ChargingStationSyncService {
      * 충전기 타입 변환
      * 환경부 코드 기준
      */
-    private String parseChargeType(String chgerType) {
-        if (chgerType == null) return "UNKNOWN";
+    /**
+     * 충전 분류 변환 (완속 / 급속)
+     */
+    private String parsePowerType(String powerType, String chgerType) {
+        // 1. powerType 우선 확인 (급속/완속 키워드 포함 여부)
+        if (powerType != null && !powerType.isEmpty()) {
+            if (powerType.contains("급속"))
+                return "급속";
+            if (powerType.contains("완속"))
+                return "완속";
+        }
+
+        // 2. powerType이 없거나 분류 불가 시 chgerType 활용 (기존 방식)
+        if (chgerType == null)
+            return "UNKNOWN";
 
         return switch (chgerType) {
-            case "01", "02" -> "DC";
-            case "03", "04" -> "AC";
-            case "05", "06" -> "FAST";
+            case "01", "02", "05", "06", "04", "09", "10" -> "급속";
+            case "03", "07", "08" -> "완속";
             default -> "UNKNOWN";
+        };
+    }
+
+    /**
+     * 상세 충전기 타입 변환 (이미지 참고)
+     */
+    private String parseDetailedChargerType(String chgerType) {
+        if (chgerType == null)
+            return "알 수 없음";
+
+        return switch (chgerType) {
+            case "01" -> "DC차데모";
+            case "02" -> "AC완속";
+            case "03" -> "DC차데모+AC3상";
+            case "04" -> "DC콤보";
+            case "05" -> "DC차데모+DC콤보";
+            case "06" -> "DC차데모+AC3상+DC콤보";
+            case "07" -> "AC3상";
+            case "08" -> "DC콤보(완속)";
+            case "09" -> "NACS";
+            case "10" -> "DC콤보+NACS";
+            default -> "알 수 없음";
         };
     }
 }

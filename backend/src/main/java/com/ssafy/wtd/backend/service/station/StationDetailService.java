@@ -22,8 +22,7 @@ public class StationDetailService {
             return null;
         }
 
-        List<ChargerSummaryDto> rawChargers =
-                stationDetailRepository.findChargersByStationId(stationId);
+        List<ChargerSummaryDto> rawChargers = stationDetailRepository.findChargersByStationId(stationId);
 
         List<ChargerSummaryDto> chargers = new ArrayList<>(rawChargers.size());
         for (ChargerSummaryDto c : rawChargers) {
@@ -36,8 +35,7 @@ public class StationDetailService {
                 station.getAddress(),
                 station.getLat(),
                 station.getLng(),
-                chargers
-        );
+                chargers);
     }
 
     /**
@@ -47,15 +45,13 @@ public class StationDetailService {
 
         StatusView view = mapStatus(raw.getStatus());
 
-        // chargeType/status는 기존 그대로 유지
         return new ChargerSummaryDto(
                 raw.getChargerId(),
-                raw.getChargerName(),
-                raw.getChargeType(),
+                raw.getPowerType(),
+                raw.getChargerType(),
                 raw.getStatus(),
                 view.statusLabel,
-                view.markerColor
-        );
+                view.markerColor);
     }
 
     /**
@@ -63,11 +59,11 @@ public class StationDetailService {
      * ※ 현재 DB status 설계(0=사용가능, 3=사용중, 그 외=불가) 기준
      */
     private StatusView mapStatus(String status) {
-        if ("0".equals(status)) {
-            return new StatusView("사용 가능", "GREEN");
+        if ("0".equals(status) || "2".equals(status)) { // 0: Available, 2: 점검(but marked available in UI)
+            return new StatusView("사용 가능", "BLUE");
         }
         if ("3".equals(status)) {
-            return new StatusView("충전 중", "BLUE");
+            return new StatusView("충전 중", "ORANGE");
         }
         return new StatusView("사용 불가", "GRAY");
     }

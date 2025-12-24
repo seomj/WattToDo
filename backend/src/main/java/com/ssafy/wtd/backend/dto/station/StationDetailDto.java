@@ -24,8 +24,7 @@ public class StationDetailDto {
             String address,
             double lat,
             double lng,
-            List<ChargerSummaryDto> chargers
-    ) {
+            List<ChargerSummaryDto> chargers) {
         this.stationId = stationId;
         this.stationName = stationName;
         this.address = address;

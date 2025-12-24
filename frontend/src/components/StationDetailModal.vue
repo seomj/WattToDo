@@ -66,10 +66,10 @@ const toggleFavorite = async () => {
 // Helper to count available/total chargers by type
 const getChargerCount = (chargers, type) => {
     if(!chargers) return '0/0';
-    const total = chargers.filter(c => c.chargeType && c.chargeType.includes(type)).length;
+    const total = chargers.filter(c => c.powerType && c.powerType.includes(type)).length;
     // Check for various 'available' status codes or strings
     const available = chargers.filter(c => {
-        if (!c.chargeType || !c.chargeType.includes(type)) return false;
+        if (!c.powerType || !c.powerType.includes(type)) return false;
         const s = String(c.status).toUpperCase();
         return s === '0' || s === '2' || s === 'AVAILABLE' || s === 'WAIT'; // 0 or 2: Available
     }).length;
@@ -210,6 +210,10 @@ const submitStartCharge = async (formData) => {
 
         showAlert({ title: '충전 시작!', message: "충전이 시작되었습니다. 안전한 충전 되세요!", emoji: '⚡' });
         showStartModal.value = false;
+        
+        // Immediate local state update for UX
+        activeStationId.value = props.station.stationId;
+        
         // Update user status globally
         emit('status-updated', 'CHARGING');
     } catch (error) {
@@ -268,9 +272,12 @@ const handleStopChargingRequest = () => {
                 <button 
                   v-if="!isUserCharging"
                   class="charge-btn-full start"
+                  :class="{ disabled: !user }"
+                  :disabled="!user"
                   @click="handleStartChargeClick()"
                 >
-                  충전 시작
+                  <template v-if="!user">로그인 후 사용 가능</template>
+                  <template v-else>충전 시작</template>
                 </button>
                 <button 
                   v-else-if="isUserCharging"
@@ -294,21 +301,17 @@ const handleStopChargingRequest = () => {
 
             <div v-for="charger in station.chargers" :key="charger.chargerId" class="charger-card">
                 <div class="charger-top">
-                    <div class="charger-name">{{ charger.chargerName }}</div>
+                    <div class="charger-id">충전기 {{ charger.chargerId.split('_').pop() }}</div>
                     <div class="charger-status" :style="{ color: getStatusColor(charger.status) }">
                         {{ charger.statusLabel || getStatusText(charger.status) }} 
                     </div>
-                </div>
-                
-                <div class="charger-id">
-                    충전기 ID {{ charger.chargerId }}
                 </div>
 
                 <div class="connector-types">
                     <!-- Hardcoded icons for now -->
                      <div class="connector active">
                         <div class="conn-icon">🔌</div>
-                        <span>{{ charger.chargeType || '충전타입' }}</span>
+                        <span>{{ charger.chargerType || '충전타입' }}</span>
                     </div>
                  </div>
             </div>
