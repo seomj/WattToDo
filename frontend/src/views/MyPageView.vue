@@ -179,6 +179,7 @@ const handleUpdateInfo = async () => {
 
 // History Modal State
 const showHistoryModal = ref(false);
+const showFavoritesModal = ref(false);
 
 const handleLogout = () => {
     emit('logout');
@@ -359,9 +360,10 @@ onMounted(fetchMyPageData);
         <div class="card favorites-card">
           <div class="card-header">
             <h3>❤️ 즐겨찾기 충전소</h3>
+            <button class="text-btn" @click="showFavoritesModal = true">전체 보기 ></button>
           </div>
           <div class="favorites-grid">
-            <div v-for="fav in favoriteStations" :key="fav.stationId" class="fav-item" @click="goToStation(fav.stationId)">
+            <div v-for="fav in favoriteStations.slice(0, 4)" :key="fav.stationId" class="fav-item" @click="goToStation(fav.stationId)">
               <div class="fav-top">
                 <span class="fav-name">{{ fav.stationName }}</span>
                 <span class="heart-icon" @click.stop="toggleFavorite(fav.stationId)" style="cursor: pointer;">❤️</span>
@@ -567,6 +569,40 @@ onMounted(fetchMyPageData);
         
         <div class="modal-footer">
           <button type="button" class="save-btn" @click="showHistoryModal = false">닫기</button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+  <!-- Full Favorites Modal -->
+  <Transition name="modal">
+    <div v-if="showFavoritesModal" class="modal-overlay" @click="showFavoritesModal = false">
+      <div class="modal-container history-modal" @click.stop>
+        <div class="modal-header">
+          <h2>전체 즐겨찾기 목록</h2>
+          <button class="close-btn" @click="showFavoritesModal = false">&times;</button>
+        </div>
+        
+        <div class="full-history-list">
+          <div v-for="fav in favoriteStations" :key="fav.stationId" class="history-item fav-history-item" @click="goToStation(fav.stationId)">
+            <div class="item-left">
+              <div class="status-icon favorite">❤️</div>
+              <div class="item-info">
+                <div class="st-name">{{ fav.stationName }}</div>
+                <div class="st-addr">{{ fav.address }}</div>
+              </div>
+            </div>
+            <div class="item-right">
+                <span class="heart-icon" @click.stop="toggleFavorite(fav.stationId)" style="cursor: pointer; font-size: 1.2rem;">❤️</span>
+            </div>
+          </div>
+          <div v-if="favoriteStations.length === 0" class="empty-state">
+            즐겨찾는 충전소가 없습니다.
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="save-btn" @click="showFavoritesModal = false">닫기</button>
         </div>
       </div>
     </div>
