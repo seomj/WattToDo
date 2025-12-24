@@ -60,8 +60,15 @@ const handleWithdrawSuccess = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     user.value = null;
-    alert("회원 탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.");
-    window.location.href = '/';
+    showAlert({
+        title: '탈퇴 완료',
+        message: '회원 탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.',
+        emoji: '👋'
+    });
+    // Give some time for user to see the alert before redirect
+    setTimeout(() => {
+        window.location.href = '/';
+    }, 2000);
 };
 
 // Security Guard: Redirect to HOME if user logs out while on a protected page

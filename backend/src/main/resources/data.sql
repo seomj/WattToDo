@@ -18,9 +18,9 @@ ON DUPLICATE KEY UPDATE
 -- 차량 정보 테이블 데이터 삽입 (보고서 제원 기반)
 INSERT INTO vehicle (user_id, model, efficiency, battery_capacity, max_range, dc_charge_type, ac_charge_type, created_at)
 VALUES 
-(101, '현대 더 뉴 아이오닉 5 롱레인지 2WD', 5.77, 84.0, 485.0, 'CCS Combo 1', 'Type 1 (5핀)', '2024-03-01 00:00:00'),
-(102, '기아 더 뉴 EV6 롱레인지 2WD', 5.88, 84.0, 494.0, 'CCS Combo 1', 'Type 1 (5핀)', '2024-05-14 00:00:00'),
-(103, '테슬라 모델 3 하이랜드 롱레인지 AWD', 6.23, 81.6, 508.0, 'Tesla NACS', 'Type 1 (Adapter)', '2024-04-04 00:00:00');
+(101, '현대 더 뉴 아이오닉 5 롱레인지 2WD', 5.77, 84.0, 485.0, 'DC콤보 (CCS1)', 'AC단상 (5핀)', '2024-03-01 00:00:00'),
+(102, '기아 더 뉴 EV6 롱레인지 2WD', 5.88, 84.0, 494.0, 'DC콤보 (CCS1)', 'AC단상 (5핀)', '2024-05-14 00:00:00'),
+(103, '테슬라 모델 3 하이랜드 롱레인지 AWD', 6.23, 81.6, 508.0, '테슬라 (NACS)', 'AC단상 (5핀)', '2024-04-04 00:00:00');
 
 -- 101번: 현재 충전 중인 상태 (record_id 자동 생성)
 INSERT INTO charge_record (user_id, station_id, status, start_kwh, target_kwh, charged_kwh, charger_capacity, start_time, created_at)

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, inject } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -10,6 +10,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['navigate', 'logout', 'withdraw', 'update-user']);
+const showAlert = inject('showAlert');
 
 const vehicle = ref(null);
 const chargeRecords = ref([]);
@@ -49,7 +50,11 @@ const lookupStatus = ref({ type: '', message: '' });
 
 const handleLookupSpec = async () => {
     if (!vehicleForm.value.model || vehicleForm.value.model.trim().length < 2) {
-        alert("검색할 모델명을 2글자 이상 입력해주세요.");
+        showAlert({
+            title: '검색어 짧음',
+            message: '검색할 모델명을 2글자 이상 입력해주세요.',
+            emoji: '🔍'
+        });
         return;
     }
 
@@ -65,13 +70,32 @@ const handleLookupSpec = async () => {
 
         if (response.data.success && response.data.data) {
             const spec = response.data.data;
+            
+            // Charging type normalization mapping
+            const mapDC = (type) => {
+                if (!type) return 'DC콤보';
+                if (type.includes('Combo') || type.includes('콤보')) return 'DC콤보';
+                if (type.includes('CHAdeMO') || type.includes('차데모')) return 'CHAdeMO';
+                if (type.includes('Tesla') || type.includes('NACS') || type.includes('테슬라')) return '테슬라';
+                if (type.includes('3상')) return 'AC3상';
+                return 'DC콤보';
+            };
+            
+            const mapAC = (type) => {
+                if (!type) return 'AC단상 5핀';
+                if (type.includes('5핀') || type.includes('Type 1')) return 'AC단상 5핀';
+                if (type.includes('7핀') || type.includes('Type 2')) return 'AC단상 7핀';
+                if (type.includes('Tesla') || type.includes('NACS') || type.includes('테슬라')) return '테슬라';
+                return 'AC단상 5핀';
+            };
+
             vehicleForm.value = {
                 ...vehicleForm.value,
                 efficiency: spec.efficiency,
                 batteryCapacity: spec.batteryCapacity,
                 maxRange: spec.maxRange,
-                dcChargeType: spec.dcChargeType,
-                acChargeType: spec.acChargeType
+                dcChargeType: mapDC(spec.dcChargeType),
+                acChargeType: mapAC(spec.acChargeType)
             };
             lookupStatus.value = { type: 'success', message: '💡 차종 정보를 찾았습니다! 상세 스펙이 자동 입력되었습니다.' };
         } else {
@@ -96,15 +120,27 @@ const handleRegisterVehicle = async () => {
 
         if (response.data.success) {
             const isUpdate = !!vehicle.value;
-            alert(isUpdate ? "차량 정보가 성공적으로 수정되었습니다." : "차량이 성공적으로 등록되었습니다.");
+            showAlert({
+                title: isUpdate ? '차량 수정 완료' : '차량 등록 완료',
+                message: isUpdate ? '차량 정보가 성공적으로 수정되었습니다.' : '차량이 성공적으로 등록되었습니다.',
+                emoji: '🚗'
+            });
             vehicle.value = response.data.data;
             showVehicleModal.value = false;
         } else {
-            alert(response.data.message || "등록 실패");
+            showAlert({
+                title: '등록 실패',
+                message: response.data.message || '등록에 실패했습니다.',
+                emoji: '❌'
+            });
         }
     } catch (error) {
         console.error("Vehicle registration failed:", error);
-        alert(error.response?.data?.message || "차량 등록 중 오류가 발생했습니다.");
+        showAlert({
+            title: '오류 발생',
+            message: error.response?.data?.message || '차량 등록 중 오류가 발생했습니다.',
+            emoji: '⚠️'
+        });
     }
 };
 // Account Editing State
@@ -139,11 +175,19 @@ const handleVerifyPassword = async () => {
         if (response.data.success) {
             isVerified.value = true;
         } else {
-            alert("비밀번호가 일치하지 않습니다.");
+            showAlert({
+                title: '인증 실패',
+                message: '비밀번호가 일치하지 않습니다.',
+                emoji: '🔒'
+            });
         }
     } catch (error) {
         console.error("Verification failed:", error);
-        alert(error.response?.data?.message || "인증 중 오류가 발생했습니다.");
+        showAlert({
+            title: '인증 오류',
+            message: error.response?.data?.message || '인증 중 오류가 발생했습니다.',
+            emoji: '⚠️'
+        });
     }
 };
 
@@ -165,21 +209,35 @@ const handleUpdateInfo = async () => {
         });
 
         if (response.data.success) {
-            alert("회원 정보가 수정되었습니다.");
+            showAlert({
+                title: '수정 완료',
+                message: '회원 정보가 수정되었습니다.',
+                emoji: '✅'
+            });
             emit('update-user', response.data.data);
             showEditModal.value = false;
         } else {
-            alert(response.data.message || "수정 실패");
+            showAlert({
+                title: '수정 실패',
+                message: response.data.message || '수정에 실패했습니다.',
+                emoji: '❌'
+            });
         }
     } catch (error) {
         console.error("Update failed:", error);
-        alert(error.response?.data?.message || "정보 수정 중 오류가 발생했습니다.");
+        showAlert({
+            title: '수정 오류',
+            message: error.response?.data?.message || '정보 수정 중 오류가 발생했습니다.',
+            emoji: '⚠️'
+        });
     }
 };
 
 // History Modal State
+// History Modal State
 const showHistoryModal = ref(false);
 const showFavoritesModal = ref(false);
+const showCarbonInfoModal = ref(false);
 
 const handleLogout = () => {
     emit('logout');
@@ -200,11 +258,19 @@ const handleWithdraw = async () => {
         if (response.data.success) {
             emit('withdraw');
         } else {
-            alert(response.data.message || "탈퇴 실패");
+            showAlert({
+                title: '탈퇴 실패',
+                message: response.data.message || '탈퇴 처리에 실패했습니다.',
+                emoji: '❌'
+            });
         }
     } catch (error) {
         console.error("Account withdrawal failed:", error);
-        alert("회원 탈퇴 중 오류가 발생했습니다.");
+        showAlert({
+            title: '탈퇴 오류',
+            message: '회원 탈퇴 중 오류가 발생했습니다.',
+            emoji: '⚠️'
+        });
     }
 };
 
@@ -297,6 +363,21 @@ onMounted(fetchMyPageData);
             <h2 class="user-name">{{ user?.name || '사용자' }}</h2>
             <p class="user-email">{{ user?.email }}</p>
             <p class="join-date">가입일: {{ formatDate(user?.createdAt) }}</p>
+          </div>
+        </div>
+
+        <!-- Carbon Saving Card -->
+        <div v-if="user?.totalCarbonSaved !== undefined" class="carbon-saving-card">
+          <div class="card-top">
+            <div class="title-area">
+              <span class="leaf-icon">🍃</span>
+              <span class="label">누적 CO₂ 감축량</span>
+            </div>
+            <button class="info-btn" @click="showCarbonInfoModal = true">ⓘ</button>
+          </div>
+          <div class="card-value">
+            <span class="number">{{ (user.totalCarbonSaved || 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) }}</span>
+            <span class="unit">kg CO₂</span>
           </div>
         </div>
 
@@ -497,17 +578,17 @@ onMounted(fetchMyPageData);
           <div class="form-row">
             <div class="form-group">
               <label>전비 (km/kWh)</label>
-              <input type="number" step="0.1" v-model="vehicleForm.efficiency" placeholder="5.4">
+              <input type="number" step="any" v-model="vehicleForm.efficiency" placeholder="5.4">
             </div>
             <div class="form-group">
               <label>배터리 용량 (kWh)</label>
-              <input type="number" step="0.1" v-model="vehicleForm.batteryCapacity" placeholder="77.4">
+              <input type="number" step="any" v-model="vehicleForm.batteryCapacity" placeholder="77.4">
             </div>
           </div>
 
           <div class="form-group">
             <label>주행 가능 거리 (km)</label>
-            <input type="number" step="0.1" v-model="vehicleForm.maxRange" placeholder="450">
+            <input type="number" step="any" v-model="vehicleForm.maxRange" placeholder="450">
           </div>
 
           <div class="form-row">
@@ -603,6 +684,51 @@ onMounted(fetchMyPageData);
         
         <div class="modal-footer">
           <button type="button" class="save-btn" @click="showFavoritesModal = false">닫기</button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+  <!-- Carbon Info Modal -->
+  <Transition name="modal">
+    <div v-if="showCarbonInfoModal" class="modal-overlay" @click="showCarbonInfoModal = false">
+      <div class="modal-container carbon-info-modal" @click.stop>
+        <div class="modal-header">
+          <h2>CO₂ 감축량 계산 공식</h2>
+          <button class="close-btn" @click="showCarbonInfoModal = false">&times;</button>
+        </div>
+        
+        <div class="modal-content-scroller">
+          <div class="info-section">
+            <h4>기본 계산식</h4>
+            <div class="formula-box">
+              <p>CO₂ 감축량 = (일반 차량 탄소 배출량) - (전기차 탄소 배출량)</p>
+              <div class="formula-detail">
+                (충전량 × 2.3 kg/L ÷ 15 km/L) - (충전량 × 0.5 kg/kWh)
+              </div>
+            </div>
+            <ul class="info-list">
+              <li><strong>전기차 충전</strong>: 1 kWh당 약 0.5 kg CO₂ 배출</li>
+              <li><strong>일반 차량</strong>: 1 L당 약 2.3 kg CO₂ 배출 (연비 15km/L 가정)</li>
+              <li><strong>나무 1그루</strong>: 연간 약 6.6 kg CO₂ 흡수</li>
+            </ul>
+          </div>
+
+          <div class="info-section example-section">
+            <h4>계산 예시</h4>
+            <div class="example-box">
+              <p><strong>100 kWh 충전 시:</strong></p>
+              <ul>
+                <li>전기차 배출량: 100 × 0.5 = 50 kg CO₂</li>
+                <li>일반 차량 배출량 (약 1,500km 주행): 100 × 0.153 × 2.3 ≈ 230 kg CO₂</li>
+                <li><strong>감축량</strong>: 230 - 50 = 180 kg CO₂</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="save-btn" @click="showCarbonInfoModal = false">확인</button>
         </div>
       </div>
     </div>
@@ -941,7 +1067,174 @@ onMounted(fetchMyPageData);
 .join-date {
   font-size: 0.9rem;
   color: #9ca3af;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+}
+
+/* Carbon Saving Card (Enhanced Two-Line Style) */
+.carbon-saving-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #dcfce7;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.carbon-saving-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.carbon-saving-card .card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.carbon-saving-card .title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.carbon-saving-card .leaf-icon {
+  font-size: 1.25rem;
+}
+
+.carbon-saving-card .label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.carbon-saving-card .info-btn {
+  background: rgba(16, 185, 129, 0.1);
+  border: none;
+  color: #10b981;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.carbon-saving-card .info-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  transform: scale(1.1);
+}
+
+.carbon-saving-card .card-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.carbon-saving-card .number {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #059669;
+  letter-spacing: -0.02em;
+}
+
+.carbon-saving-card .unit {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+/* Carbon Info Modal Styles */
+.carbon-info-modal {
+  max-width: 480px;
+}
+
+.modal-content-scroller {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.info-section {
+  margin-bottom: 2rem;
+}
+
+.info-section h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.formula-box, .example-box {
+  background-color: #f0fdf4;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid #dcfce7;
+}
+
+.formula-box p {
+  color: #166534;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  text-align: center;
+}
+
+.formula-detail {
+  font-size: 0.85rem;
+  color: #15803d;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.info-list {
+  margin: 1.25rem 0 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-list li {
+  font-size: 0.9rem;
+  color: #374151;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.info-list li::before {
+  content: '•';
+  color: #10b981;
+}
+
+.example-box {
+  background-color: #f9fafb;
+  border: 1px solid #f3f4f6;
+}
+
+.example-box p {
+  color: #374151;
+  margin-bottom: 0.75rem;
+  text-align: left;
+}
+
+.example-box ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.example-box li {
+  font-size: 0.85rem;
+  color: #4b5563;
 }
 
 /* Vehicle Card */

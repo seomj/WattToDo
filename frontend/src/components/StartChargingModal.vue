@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 
 const props = defineProps({
   show: Boolean,
@@ -7,6 +7,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'start']);
+const showAlert = inject('showAlert');
 
 const targetKwh = ref(0);
 const startKwh = ref(0);
@@ -14,7 +15,11 @@ const chargerCapacity = ref(0);
 
 const handleStart = () => {
     if (targetKwh.value <= 0 || chargerCapacity.value <= 0) {
-        alert("올바른 값을 입력해주세요.");
+        showAlert({
+            title: '입력 오류',
+            message: '올바른 값을 입력해주세요.',
+            emoji: '⚠️'
+        });
         return;
     }
     emit('start', {

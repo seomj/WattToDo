@@ -1,8 +1,9 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import axios from 'axios';
 
 const emit = defineEmits(['signup-success', 'navigate']);
+const showAlert = inject('showAlert');
 
 const email = ref('');
 const password = ref('');
@@ -24,18 +25,27 @@ const handleSignup = async () => {
             name: name.value
         });
         
-        alert("회원가입이 완료되었습니다. 로그인해주세요.");
+        showAlert({
+            title: '가입 완료',
+            message: '회원가입이 완료되었습니다. 로그인해주세요.',
+            emoji: '🎉'
+        });
         emit('navigate', 'LOGIN'); // Navigate to login page
         
     } catch (error) {
         console.error("Signup failed:", error);
         if (error.response) {
-            // Show server provided error message if available
             errorMessage.value = error.response.data.message || 
                                  `회원가입 실패 (${error.response.status})`;
         } else {
             errorMessage.value = "서버 연결에 실패했습니다.";
         }
+        
+        showAlert({
+            title: '가입 실패',
+            message: errorMessage.value,
+            emoji: '❌'
+        });
     }
 };
 

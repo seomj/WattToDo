@@ -18,8 +18,9 @@ public class MyInfoRes {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Float totalCarbonSaved;
 
-    public static MyInfoRes from(User user) {
+    public static MyInfoRes from(User user, Float totalCarbonSaved) {
         return MyInfoRes.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
@@ -29,6 +30,7 @@ public class MyInfoRes {
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .totalCarbonSaved(totalCarbonSaved)
                 .build();
     }
 }

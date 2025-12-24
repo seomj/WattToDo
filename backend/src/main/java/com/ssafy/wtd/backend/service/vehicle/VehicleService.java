@@ -47,7 +47,7 @@ public class VehicleService {
         if (spec == null && (efficiency == null || batteryCapacity == null || maxRange == null)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "해당 차종 정보가 없어 efficiency, batteryCapacity, maxRange 입력이 필요합니다."
+                    "해당 차종의 정보가 없어 추가 입력이 필요합니다."
             );
         }
 

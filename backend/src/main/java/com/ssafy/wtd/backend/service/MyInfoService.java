@@ -17,6 +17,7 @@ public class MyInfoService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final com.ssafy.wtd.backend.repository.CarbonRepository carbonRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public MyInfoRes getMyInfo(Long userId) {
@@ -36,7 +37,10 @@ public class MyInfoService {
             );
         }
 
-        return MyInfoRes.from(user);
+        Float totalCarbonSavedReq = carbonRepository.getTotalCarbonSavedByUserId(userId);
+        float totalCarbonSaved = (totalCarbonSavedReq != null) ? totalCarbonSavedReq : 0.0f;
+
+        return MyInfoRes.from(user, totalCarbonSaved);
     }
 
     public MyInfoRes updateMyInfo(Long userId, MyInfoUpdateReq req) {
@@ -85,7 +89,11 @@ public class MyInfoService {
 
         // Fetch the latest full info after update to ensure all fields (createdAt, role, etc.) are intact
         User updatedUser = userRepository.findByUserId(userId);
-        return MyInfoRes.from(updatedUser);
+        
+        Float totalCarbonSavedReq = carbonRepository.getTotalCarbonSavedByUserId(userId);
+        float totalCarbonSaved = (totalCarbonSavedReq != null) ? totalCarbonSavedReq : 0.0f;
+
+        return MyInfoRes.from(updatedUser, totalCarbonSaved);
     }
 
     public void deleteMyInfo(Long userId) {

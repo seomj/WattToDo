@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch, inject } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -19,6 +19,7 @@ const stations = ref([]);
 const markers = ref([]);
 
 const KAKAO_KEY = import.meta.env.VITE_KAKAO_MAP_KEY;
+const showAlert = inject('showAlert');
 
 const loadKakaoMap = () => {
   if (window.kakao && window.kakao.maps) {
@@ -34,7 +35,11 @@ const loadKakaoMap = () => {
     };
     script.onerror = () => {
       console.error("Kakao Map Script Failed to Load");
-      alert("지도를 불러오는데 실패했습니다. API Key가 'JavaScript 키'인지, 그리고 도메인 등록이 되었는지 확인해주세요.");
+      showAlert({
+          title: '지도 로드 실패',
+          message: "지도를 불러오는데 실패했습니다. API Key가 'JavaScript 키'인지, 그리고 도메인 등록이 되었는지 확인해주세요.",
+          emoji: '❌'
+      });
     };
     document.head.appendChild(script);
   }
