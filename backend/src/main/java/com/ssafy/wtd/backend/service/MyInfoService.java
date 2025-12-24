@@ -1,8 +1,8 @@
 package com.ssafy.wtd.backend.service;
 
 import com.ssafy.wtd.backend.dto.user.MyInfoRes;
+import com.ssafy.wtd.backend.dto.user.MyInfoRes;
 import com.ssafy.wtd.backend.dto.user.MyInfoUpdateReq;
-import com.ssafy.wtd.backend.dto.user.MyInfoUpdateRes;
 import com.ssafy.wtd.backend.model.User;
 import com.ssafy.wtd.backend.repository.RefreshTokenRepository;
 import com.ssafy.wtd.backend.repository.UserRepository;
@@ -39,7 +39,7 @@ public class MyInfoService {
         return MyInfoRes.from(user);
     }
 
-    public MyInfoUpdateRes updateMyInfo(Long userId, MyInfoUpdateReq req) {
+    public MyInfoRes updateMyInfo(Long userId, MyInfoUpdateReq req) {
 
         User user = userRepository.findByUserId(userId);
         if (user == null || "DISABLED".equalsIgnoreCase(user.getStatus())) {
@@ -65,26 +65,27 @@ public class MyInfoService {
             userRepository.updatePassword(userId, passwordEncoder.encode(req.getPassword()));
         }
 
-        // 3. 기본 정보 업데이트 (email 포함)
-        int updated = userRepository.updateMyInfo(
+        String updatedEmail = req.getEmail() != null ? req.getEmail() : user.getEmail();
+        String updatedName = req.getName() != null ? req.getName() : user.getName();
+        String updatedNickname = req.getNickname() != null ? req.getNickname() : user.getNickname();
+
+        int updatedCount = userRepository.updateMyInfo(
                 userId,
-                req.getEmail() != null ? req.getEmail() : user.getEmail(),
-                req.getName() != null ? req.getName() : user.getName(),
-                req.getNickname() != null ? req.getNickname() : user.getNickname()
+                updatedEmail,
+                updatedName,
+                updatedNickname
         );
 
-        if (updated == 0) {
+        if (updatedCount == 0) {
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "사용자 정보 수정에 실패했습니다."
             );
         }
 
-        return new MyInfoUpdateRes(
-                userId,
-                req.getName(),
-                req.getNickname()
-        );
+        // Fetch the latest full info after update to ensure all fields (createdAt, role, etc.) are intact
+        User updatedUser = userRepository.findByUserId(userId);
+        return MyInfoRes.from(updatedUser);
     }
 
     public void deleteMyInfo(Long userId) {

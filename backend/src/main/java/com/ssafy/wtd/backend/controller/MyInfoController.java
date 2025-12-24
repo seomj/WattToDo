@@ -2,8 +2,8 @@ package com.ssafy.wtd.backend.controller;
 
 import com.ssafy.wtd.backend.dto.ApiRes;
 import com.ssafy.wtd.backend.dto.user.MyInfoRes;
+import com.ssafy.wtd.backend.dto.user.MyInfoRes;
 import com.ssafy.wtd.backend.dto.user.MyInfoUpdateReq;
-import com.ssafy.wtd.backend.dto.user.MyInfoUpdateRes;
 import com.ssafy.wtd.backend.dto.user.PasswordVerifyReq;
 import com.ssafy.wtd.backend.security.CustomUserDetails;
 import com.ssafy.wtd.backend.service.MyInfoService;
@@ -27,7 +27,7 @@ public class MyInfoController {
     }
 
     @PatchMapping("/myinfo")
-    public ApiRes<MyInfoUpdateRes> updateMyInfo(
+    public ApiRes<MyInfoRes> updateMyInfo(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody MyInfoUpdateReq request
     ) {
