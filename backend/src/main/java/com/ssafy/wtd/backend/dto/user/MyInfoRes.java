@@ -13,7 +13,7 @@ public class MyInfoRes {
     private Long userId;
     private String email;
     private String name;
-    private String nickname;
+
     private String role;
     private String status;
     private LocalDateTime createdAt;
@@ -25,7 +25,7 @@ public class MyInfoRes {
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .name(user.getName())
-                .nickname(user.getNickname())
+
                 .role(user.getRole())
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())

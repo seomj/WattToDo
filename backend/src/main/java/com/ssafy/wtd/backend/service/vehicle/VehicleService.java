@@ -1,132 +1,136 @@
 package com.ssafy.wtd.backend.service.vehicle;
 
-import com.ssafy.wtd.backend.dto.vehicle.*;
+import com.ssafy.wtd.backend.dto.vehicle.VehicleRegisterReq;
+import com.ssafy.wtd.backend.dto.vehicle.VehicleRes;
+import com.ssafy.wtd.backend.dto.vehicle.VehicleUpdateReq;
+import com.ssafy.wtd.backend.model.User;
 import com.ssafy.wtd.backend.model.Vehicle;
+import com.ssafy.wtd.backend.repository.UserRepository;
 import com.ssafy.wtd.backend.repository.VehicleRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
+    private final UserRepository userRepository;
 
-    /**
-     * 내 차량 조회
-     */
-    public VehicleRes getMyVehicle(Long userId) {
-        Vehicle vehicle = vehicleRepository.findByUserId(userId);
-        return vehicle == null ? null : toRes(vehicle);
+    @Transactional(readOnly = true)
+    public VehicleRes getVehicle(Long userId) {
+        Vehicle v = vehicleRepository.findByUserId(userId);
+        if (v == null)
+            return null;
+        return toRes(v);
     }
 
     /**
-     * 차량 등록
-     * - 1인 1차량 정책
-     * - 기존 차량 있으면 UPDATE
-     * - 없으면 INSERT
-     * - model 기반 자동 스펙 채움
+     * 차량 등록 (Catalog Logic)
+     * 1. 동일한 스펙(Model 등)의 차량이 있는지 조회
+     * 2. 없으면 Vehicle 생성 (Catalog 추가)
+     * 3. User의 vehicleId 업데이트 (Link)
      */
-    public VehicleRes registerMyVehicle(Long userId, VehicleRegisterReq req) {
-        if (req.getModel() == null || req.getModel().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "model은 필수입니다.");
-        }
+    @Transactional
+    public VehicleRes registerVehicle(Long userId, VehicleRegisterReq req) {
+        // 1. 기존 스펙 검색
+        Vehicle specSearch = vehicleRepository.findSpecByModel(req.getModel());
 
-        // 동일 모델 스펙 조회 (자동 채움용)
-        Vehicle spec = vehicleRepository.findSpecByModel(req.getModel());
+        // 입력값 보완
+        Float efficiency = first(req.getEfficiency(), specSearch != null ? specSearch.getEfficiency() : null);
+        Float batteryCapacity = first(req.getBatteryCapacity(),
+                specSearch != null ? specSearch.getBatteryCapacity() : null);
+        Float maxRange = first(req.getMaxRange(), specSearch != null ? specSearch.getMaxRange() : null);
+        String fastChargeType = first(req.getFastChargeType(),
+                specSearch != null ? specSearch.getFastChargeType() : null);
+        String slowChargeType = first(req.getSlowChargeType(),
+                specSearch != null ? specSearch.getSlowChargeType() : null);
 
-        Float efficiency = first(req.getEfficiency(), spec != null ? spec.getEfficiency() : null);
-        Float batteryCapacity = first(req.getBatteryCapacity(), spec != null ? spec.getBatteryCapacity() : null);
-        Float maxRange = first(req.getMaxRange(), spec != null ? spec.getMaxRange() : null);
-        String dcChargeType = first(req.getDcChargeType(), spec != null ? spec.getDcChargeType() : null);
-        String acChargeType = first(req.getAcChargeType(), spec != null ? spec.getAcChargeType() : null);
-
-        // 스펙 DB에도 없고 사용자도 안 준 경우
-        if (spec == null && (efficiency == null || batteryCapacity == null || maxRange == null)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "해당 차종의 정보가 없어 추가 입력이 필요합니다."
-            );
-        }
-
-        Vehicle existing = vehicleRepository.findByUserId(userId);
-
-        Vehicle vehicle = Vehicle.builder()
-                .userId(userId)
+        Vehicle newVehicle = Vehicle.builder()
                 .model(req.getModel())
                 .efficiency(efficiency)
                 .batteryCapacity(batteryCapacity)
                 .maxRange(maxRange)
-                .dcChargeType(dcChargeType)
-                .acChargeType(acChargeType)
+                .fastChargeType(fastChargeType)
+                .slowChargeType(slowChargeType)
                 .build();
 
-        if (existing == null) {
-            vehicleRepository.insert(vehicle);
-        } else {
-            vehicleRepository.updateByUserId(vehicle);
-        }
+        vehicleRepository.insert(newVehicle);
+        userRepository.updateVehicleId(userId, newVehicle.getVehicleId());
 
-        return toRes(vehicleRepository.findByUserId(userId));
+        return toRes(newVehicle);
     }
 
     /**
-     * 차량 부분 수정
+     * 차량 '수정' -> 사실상 다른 Vehicle로 교체하거나 스펙 업데이트
+     * Catalog 방식이므로, 기존 Vehicle 내용을 바꾸면 다른 사용자에게도 영향이 감.
+     * 따라서 "수정" 요청이 들어오면:
+     * 1. 새로운 Vehicle을 생성(또는 찾기)
+     * 2. User가 그걸 가리키도록 변경 (Link 교체)
      */
-    public VehicleRes updateMyVehicle(Long userId, VehicleUpdateReq req) {
+    @Transactional
+    public VehicleRes updateVehicle(Long userId, VehicleUpdateReq req) {
+        User user = userRepository.findByUserId(userId);
+        if (user == null)
+            throw new IllegalArgumentException("User not found");
 
+        // 내 차량 정보(기존 스펙 참고용)
         Vehicle existing = vehicleRepository.findByUserId(userId);
-        if (existing == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "등록된 차량이 없습니다.");
-        }
 
-        Vehicle vehicle = Vehicle.builder()
-                .userId(userId)
-                .model(req.getModel() != null ? req.getModel() : existing.getModel())
-                .efficiency(req.getEfficiency() != null ? req.getEfficiency() : existing.getEfficiency())
-                .batteryCapacity(req.getBatteryCapacity() != null ? req.getBatteryCapacity() : existing.getBatteryCapacity())
-                .maxRange(req.getMaxRange() != null ? req.getMaxRange() : existing.getMaxRange())
-                .dcChargeType(req.getDcChargeType() != null ? req.getDcChargeType() : existing.getDcChargeType())
-                .acChargeType(req.getAcChargeType() != null ? req.getAcChargeType() : existing.getAcChargeType())
+        Vehicle newVehicle = Vehicle.builder()
+                .model(req.getModel())
+                // 값이 없으면 기존 차량 스펙 유지
+                .efficiency(req.getEfficiency() != null ? req.getEfficiency()
+                        : (existing != null ? existing.getEfficiency() : null))
+                .batteryCapacity(req.getBatteryCapacity() != null ? req.getBatteryCapacity()
+                        : (existing != null ? existing.getBatteryCapacity() : null))
+                .maxRange(req.getMaxRange() != null ? req.getMaxRange()
+                        : (existing != null ? existing.getMaxRange() : null))
+                .fastChargeType(req.getFastChargeType() != null ? req.getFastChargeType()
+                        : (existing != null ? existing.getFastChargeType() : null))
+                .slowChargeType(req.getSlowChargeType() != null ? req.getSlowChargeType()
+                        : (existing != null ? existing.getSlowChargeType() : null))
                 .build();
 
-        vehicleRepository.updateByUserId(vehicle);
-        return toRes(vehicleRepository.findByUserId(userId));
+        vehicleRepository.insert(newVehicle);
+        userRepository.updateVehicleId(userId, newVehicle.getVehicleId());
+
+        return toRes(newVehicle);
     }
 
-    /**
-     * 차량 삭제 (Hard Delete)
-     */
-    public void deleteMyVehicle(Long userId) {
-        vehicleRepository.deleteByUserId(userId);
+    @Transactional
+    public void deleteVehicle(Long userId) {
+        // User 연결 해제 (Vehicle 데이터는 Catalog로 남겨둠 - 히스토리용 or 타 유저 사용 가능성)
+        // vehicleRepository.deleteByUserId(userId); // 기존 코드 삭제됨
+        userRepository.updateVehicleId(userId, null);
     }
 
-    /**
-     * 모델명으로 차량 스펙 조회 (자동 채움용)
-     */
+    @Transactional(readOnly = true)
     public VehicleRes getVehicleSpec(String model) {
         Vehicle spec = vehicleRepository.findSpecByModel(model);
         return spec == null ? null : toRes(spec);
     }
 
-    /* ===========================
-       private helper
-       =========================== */
+    /*
+     * ===========================
+     * Private Methods
+     * ===========================
+     */
 
     private VehicleRes toRes(Vehicle v) {
-        return new VehicleRes(
-                v.getVehicleId(),
-                v.getUserId(),
-                v.getModel(),
-                v.getEfficiency(),
-                v.getBatteryCapacity(),
-                v.getMaxRange(),
-                v.getDcChargeType(),
-                v.getAcChargeType(),
-                v.getCreatedAt()
-        );
+        return VehicleRes.builder()
+                .vehicleId(v.getVehicleId())
+                .model(v.getModel())
+                .efficiency(v.getEfficiency())
+                .batteryCapacity(v.getBatteryCapacity())
+                .maxRange(v.getMaxRange())
+                .fastChargeType(v.getFastChargeType())
+                .slowChargeType(v.getSlowChargeType())
+                .createdAt(v.getCreatedAt())
+                .build();
     }
 
     private static <T> T first(T a, T b) {

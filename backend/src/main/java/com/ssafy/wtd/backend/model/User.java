@@ -13,9 +13,10 @@ public class User {
     private String email;
     private String password;
     private String name;
-    private String nickname;
+
     private String role;
     private String status;
+    private Long vehicleId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

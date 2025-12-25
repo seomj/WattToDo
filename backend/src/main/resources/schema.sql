@@ -1,41 +1,41 @@
--- 1. 데이터베이스가 이미 존재한다면 삭제 (개발/테스트 환경에서 사용 권장)
+-- 1. 데이터베이스 초기화 및 생성
 DROP DATABASE IF EXISTS wtd_db;
-
--- 2. 데이터베이스 생성
 CREATE DATABASE IF NOT EXISTS wtd_db
     CHARACTER SET utf8mb4 
     COLLATE utf8mb4_unicode_ci;
 
--- 3. 사용할 데이터베이스 선택
 USE wtd_db;
 
--- 2.1. 사용자 정보 테이블
+-- 2. 차량 정보 테이블 (Master Table)
+-- 사용자와 독립적으로 존재하며, 제조사의 공식 제원을 관리합니다.
+CREATE TABLE vehicle (
+    vehicle_id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '차량 모델 고유 ID',
+    model VARCHAR(100) NOT NULL COMMENT '차량 모델명',
+    efficiency FLOAT COMMENT '전비 (km/kWh)',
+    battery_capacity FLOAT COMMENT '배터리 용량 (kWh)',
+    max_range FLOAT COMMENT '완충 시 주행 거리 (km)',
+    fast_charge_type VARCHAR(50) COMMENT '급속 충전 방식 (예: CCS Combo 1)',
+    slow_charge_type VARCHAR(50) COMMENT '완속 충전 방식 (예: Type 1)',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) COMMENT '전기차 모델 제원 정보';
+
+-- 3. 사용자 정보 테이블 (Child Table)
+-- 사용자는 생성된 vehicle 중 하나를 참조합니다.
 CREATE TABLE user (
     user_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, -- Hashed password
+    password VARCHAR(255) NOT NULL,
     name VARCHAR(50) NOT NULL,
-    nickname VARCHAR(50),
-    role VARCHAR(10) NOT NULL DEFAULT 'USER', -- USER / ADMIN
-    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- active / disabled
+    role VARCHAR(10) NOT NULL DEFAULT 'USER',
+    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
+    vehicle_id BIGINT COMMENT '보유 차량 모델 ID (FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) COMMENT '사용자 정보';
-
--- 2.2. 차량 정보 테이블
-CREATE TABLE vehicle (
-    vehicle_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    model VARCHAR(100) NOT NULL,
-    efficiency FLOAT, -- 전비 (e.g., km/kWh)
-    battery_capacity FLOAT, -- 배터리 용량 (kWh)
-    max_range FLOAT, -- 완충 시 주행 거리 (km)
-    dc_charge_type VARCHAR(50), -- 차량이 지원하는 급속 충전 방식
-    ac_charge_type VARCHAR(50), -- 차량이 지원하는 완속 충전 방식
-    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (user_id) REFERENCES user(user_id)
-) COMMENT '사용자별 차량 정보';
+    -- 외래 키 설정: 존재하는 차량 모델만 선택 가능하도록 강제
+    CONSTRAINT fk_user_vehicle 
+    FOREIGN KEY (vehicle_id) REFERENCES vehicle(vehicle_id)
+) COMMENT '사용자 정보 및 보유 차량 연결';
 
 -- 2.3. 충전소 정보 테이블
 CREATE TABLE charging_station (
@@ -43,9 +43,7 @@ CREATE TABLE charging_station (
     station_name VARCHAR(100) NOT NULL,
     address VARCHAR(255) NOT NULL,
     lat DOUBLE NOT NULL,
-    lng DOUBLE NOT NULL,
-    city VARCHAR(50),
-    district VARCHAR(50)
+    lng DOUBLE NOT NULL
 ) COMMENT '충전소 위치 및 기본 정보';
 
 -- 2.4. 충전기 정보 테이블
@@ -60,21 +58,6 @@ CREATE TABLE charger (
 
     FOREIGN KEY (station_id) REFERENCES charging_station(station_id)
 ) COMMENT '충전소에 설치된 개별 충전기 정보 및 상태';
-
--- 2.5. 충전기 포트 정보 테이블
-CREATE TABLE charger_port (
-    port_id VARCHAR(30) PRIMARY KEY,         -- 포트 고유 ID(pk)
-    charger_id VARCHAR(20) NOT NULL,         -- charger FK
-    port_name VARCHAR(50),                   -- 포트명 (A-01, B-02 등 선택)
-    
-    port_type VARCHAR(20) NOT NULL,          -- 타입 (Type1, Type2, CCS1, CHAdeMO 등)
-    capacity INT NOT NULL,                   -- 포트 출력(kW)
-
-    is_ac BOOLEAN NOT NULL,                  -- AC 여부 (TRUE=AC 완속)
-    is_dc BOOLEAN NOT NULL,                  -- DC 여부 (TRUE=DC 급속)
-
-    FOREIGN KEY (charger_id) REFERENCES charger(charger_id)
-) COMMENT '충전기의 개별 포트(커넥터) 상세 정보';
 
 -- 2.6. 충전 기록 테이블 (Charge Record)
 -- 역할: 사용자의 충전 활동 및 관련 통계 데이터를 기록
@@ -171,13 +154,12 @@ CREATE TABLE IF NOT EXISTS refresh_token (
 
 -- 3.1. 기본 관리자 계정 삽입 (carbon_config의 updated_by를 위한 선행 작업)
 INSERT INTO user (
-    user_id, email, password, name, nickname, role, status, created_at, updated_at
+    user_id, email, password, name, role, status, created_at, updated_at
 ) VALUES (
     1, 
     'admin@example.com', 
     '1234', -- 실제 운영 시에는 안전한 해시된 비밀번호 사용
     '관리자', 
-    'SystemAdmin', 
     'ADMIN', 
     'ACTIVE', 
     NOW(), 

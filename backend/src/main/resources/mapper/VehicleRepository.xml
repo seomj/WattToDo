@@ -4,49 +4,47 @@
 <mapper namespace="com.ssafy.wtd.backend.repository.VehicleRepository">
 
     <select id="getEfficiencyByUserId" resultType="float">
-        SELECT efficiency
-        FROM vehicle
-        WHERE user_id = #{userId}
-        ORDER BY created_at DESC
+        SELECT v.efficiency
+        FROM vehicle v
+        JOIN user u ON v.vehicle_id = u.vehicle_id
+        WHERE u.user_id = #{userId}
         LIMIT 1
     </select>
 
     <resultMap id="VehicleResultMap" type="com.ssafy.wtd.backend.model.Vehicle">
         <id property="vehicleId" column="vehicle_id"/>
-        <result property="userId" column="user_id"/>
-
         <result property="model" column="model"/>
         <result property="efficiency" column="efficiency"/>
         <result property="batteryCapacity" column="battery_capacity"/>
         <result property="maxRange" column="max_range"/>
-        <result property="dcChargeType" column="dc_charge_type"/>
-        <result property="acChargeType" column="ac_charge_type"/>
+        <result property="fastChargeType" column="fast_charge_type"/>
+        <result property="slowChargeType" column="slow_charge_type"/>
 
         <result property="createdAt" column="created_at"/>
     </resultMap>
 
     <select id="findByUserId" resultMap="VehicleResultMap">
         SELECT
-        vehicle_id, user_id, model, efficiency, battery_capacity, max_range,
-        dc_charge_type, ac_charge_type, created_at
-        FROM vehicle
-        WHERE user_id = #{userId}
+        v.vehicle_id, v.model, v.efficiency, v.battery_capacity, v.max_range,
+        v.fast_charge_type, v.slow_charge_type, v.created_at
+        FROM vehicle v
+        JOIN user u ON v.vehicle_id = u.vehicle_id
+        WHERE u.user_id = #{userId}
         LIMIT 1
     </select>
 
-    <!-- 스펙 자동 채움용: 동일 model 중 최근 데이터 1건 -->
     <select id="findSpecByModel" resultMap="VehicleResultMap">
         SELECT
-        vehicle_id, user_id, model, efficiency, battery_capacity, max_range,
-        dc_charge_type, ac_charge_type, created_at
+        vehicle_id, model, efficiency, battery_capacity, max_range,
+        fast_charge_type, slow_charge_type, created_at
         FROM vehicle
         WHERE model = #{model}
         AND (
         efficiency IS NOT NULL
         OR battery_capacity IS NOT NULL
         OR max_range IS NOT NULL
-        OR dc_charge_type IS NOT NULL
-        OR ac_charge_type IS NOT NULL
+        OR fast_charge_type IS NOT NULL
+        OR slow_charge_type IS NOT NULL
         )
         ORDER BY created_at DESC
         LIMIT 1
@@ -54,11 +52,11 @@
 
     <insert id="insert" parameterType="com.ssafy.wtd.backend.model.Vehicle" useGeneratedKeys="true" keyProperty="vehicleId">
         INSERT INTO vehicle (
-        user_id, model, efficiency, battery_capacity, max_range,
-        dc_charge_type, ac_charge_type, created_at
+        model, efficiency, battery_capacity, max_range,
+        fast_charge_type, slow_charge_type, created_at
         ) VALUES (
-        #{userId}, #{model}, #{efficiency}, #{batteryCapacity}, #{maxRange},
-        #{dcChargeType}, #{acChargeType}, NOW()
+        #{model}, #{efficiency}, #{batteryCapacity}, #{maxRange},
+        #{fastChargeType}, #{slowChargeType}, NOW()
         )
     </insert>
 
@@ -69,14 +67,14 @@
         efficiency = #{efficiency},
         battery_capacity = #{batteryCapacity},
         max_range = #{maxRange},
-        dc_charge_type = #{dcChargeType},
-        ac_charge_type = #{acChargeType}
-        WHERE user_id = #{userId}
+        fast_charge_type = #{fastChargeType},
+        slow_charge_type = #{slowChargeType}
+        WHERE vehicle_id = #{vehicleId}
     </update>
 
     <delete id="deleteByUserId">
         DELETE FROM vehicle
-        WHERE user_id = #{userId}
+        WHERE vehicle_id = #{vehicleId}
     </delete>
 
 </mapper>

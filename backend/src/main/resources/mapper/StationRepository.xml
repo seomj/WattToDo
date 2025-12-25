@@ -4,7 +4,7 @@
 <mapper namespace="com.ssafy.wtd.backend.repository.StationRepository">
 
     <select id="findById" parameterType="java.lang.String" resultType="com.ssafy.wtd.backend.model.Station">
-        SELECT station_id AS stationId, station_name AS stationName, address, lat, lng, city, district
+        SELECT station_id AS stationId, station_name AS stationName, address, lat, lng
         FROM charging_station
         WHERE TRIM(station_id) = TRIM(#{stationId})
     </select>

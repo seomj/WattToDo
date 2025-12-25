@@ -1,11 +1,13 @@
 package com.ssafy.wtd.backend.dto.vehicle;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Builder
 @AllArgsConstructor
 public class VehicleRes {
     private Long vehicleId;
@@ -15,8 +17,8 @@ public class VehicleRes {
     private Float efficiency;
     private Float batteryCapacity;
     private Float maxRange;
-    private String dcChargeType;
-    private String acChargeType;
+    private String fastChargeType;
+    private String slowChargeType;
 
     private LocalDateTime createdAt;
 }

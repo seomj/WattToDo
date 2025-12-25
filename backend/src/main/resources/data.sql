@@ -1,26 +1,23 @@
--- 테스트 사용자 데이터를 삽입합니다. (기존 쿼리 유지)
-INSERT INTO wtd_db.user
-    (user_id, email, password, name, nickname, role, status, created_at, updated_at)
+-- 1. 차량 모델 정보(Master Data) 삽입
+INSERT INTO vehicle (vehicle_id, model, efficiency, battery_capacity, max_range, fast_charge_type, slow_charge_type, created_at)
+VALUES 
+(1, '현대 더 뉴 아이오닉 5 롱레인지 2WD', 5.77, 84.0, 485.0, 'CCS Combo 1', 'Type 1 (5핀)', '2024-03-01 00:00:00'),
+(2, '기아 더 뉴 EV6 롱레인지 2WD', 5.88, 84.0, 494.0, 'CCS Combo 1', 'Type 1 (5핀)', '2024-05-14 00:00:00'),
+(3, '테슬라 모델 3 하이랜드 롱레인지 AWD', 6.23, 81.6, 508.0, 'Tesla NACS', 'Type 1 (Adapter)', '2024-04-04 00:00:00');
+
+-- 2. 사용자 정보 삽입 (각 사용자에게 vehicle_id 할당)
+INSERT INTO user (user_id, email, password, name, vehicle_id, created_at, updated_at)
 VALUES
-    (101, 'test1@example.com', '1234', '테스트1', 'TestUser01', 'USER', 'ACTIVE', NOW(), NOW()),
-    (102, 'test2@example.com', '1234', '테스트2', 'TestUser02', 'USER', 'ACTIVE', NOW(), NOW()),
-    (103, 'test3@example.com', '1234', '테스트3', 'TestUser03', 'USER', 'ACTIVE', NOW(), NOW()),
-    (104, 'test4@example.com', '1234', '테스트4', 'TestUser04', 'USER', 'ACTIVE', NOW(), NOW())
--- 'new'라는 별칭(Alias)을 부여합니다.
-AS new 
+(101, 'test1@example.com', '1234', '테스트1', 1, NOW(), NOW()),
+(102, 'test2@example.com', '1234', '테스트2', 2, NOW(), NOW()),
+(103, 'test3@example.com', '1234', '테스트3', 3, NOW(), NOW()),
+(104, 'test4@example.com', '1234', '테스트4', NULL, NOW(), NOW())
+AS new
 ON DUPLICATE KEY UPDATE
-    -- VALUES(email) 대신 별칭(new)을 사용하여 값을 참조합니다.
     email = new.email,
     name = new.name,
-    nickname = new.nickname,
+    vehicle_id = new.vehicle_id,
     updated_at = NOW();
-
--- 차량 정보 테이블 데이터 삽입 (보고서 제원 기반)
-INSERT INTO vehicle (user_id, model, efficiency, battery_capacity, max_range, dc_charge_type, ac_charge_type, created_at)
-VALUES 
-(101, '현대 더 뉴 아이오닉 5 롱레인지 2WD', 5.77, 84.0, 485.0, 'DC콤보 (CCS1)', 'AC단상 (5핀)', '2024-03-01 00:00:00'),
-(102, '기아 더 뉴 EV6 롱레인지 2WD', 5.88, 84.0, 494.0, 'DC콤보 (CCS1)', 'AC단상 (5핀)', '2024-05-14 00:00:00'),
-(103, '테슬라 모델 3 하이랜드 롱레인지 AWD', 6.23, 81.6, 508.0, '테슬라 (NACS)', 'AC단상 (5핀)', '2024-04-04 00:00:00');
 
 -- 101번: 현재 충전 중인 상태 (record_id 자동 생성)
 INSERT INTO charge_record (user_id, station_id, status, start_kwh, target_kwh, charged_kwh, charger_capacity, start_time, created_at)

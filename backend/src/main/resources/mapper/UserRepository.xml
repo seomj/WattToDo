@@ -10,24 +10,17 @@
         <result property="email"     column="email"/>
         <result property="password"  column="password"/>
         <result property="name"      column="name"/>
-        <result property="nickname"  column="nickname"/>
+
         <result property="role"      column="role"/>
         <result property="status"    column="status"/>
+        <result property="vehicleId" column="vehicle_id"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <select id="findByUserId" parameterType="long" resultMap="UserResultMap">
         SELECT
-        user_id,
-        email,
-        password,
-        name,
-        nickname,
-        role,
-        status,
-        created_at,
-        updated_at
+        user_id, email, password, name, role, status, vehicle_id, created_at, updated_at
         FROM user
         WHERE user_id = #{userId}
         LIMIT 1
@@ -35,26 +28,26 @@
 
     <select id="findByEmail" parameterType="string" resultMap="UserResultMap">
         SELECT
-        user_id,
-        email,
-        password,
-        name,
-        nickname,
-        role,
-        status,
-        created_at,
-        updated_at
+        user_id, email, password, name, role, status, vehicle_id, created_at, updated_at
         FROM user
         WHERE email = #{email}
         LIMIT 1
     </select>
+
+    <insert id="insert" parameterType="com.ssafy.wtd.backend.model.User" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO user (
+        email, password, name, role, status, vehicle_id, created_at, updated_at
+        ) VALUES (
+        #{email}, #{password}, #{name}, #{role}, #{status}, #{vehicleId}, NOW(), NOW()
+        )
+    </insert>
 
     <update id="updateMyInfo">
         UPDATE user
         SET
         email = #{email},
         name = #{name},
-        nickname = #{nickname},
+
         updated_at = NOW()
         WHERE user_id = #{userId}
         AND status = 'ACTIVE'
@@ -77,32 +70,18 @@
         WHERE user_id = #{userId}
     </update>
 
-    <insert id="insert" parameterType="com.ssafy.wtd.backend.model.User" useGeneratedKeys="true" keyProperty="userId">
-        INSERT INTO user (
-            email,
-            password,
-            name,
-            nickname,
-            role,
-            status,
-            created_at,
-            updated_at
-        ) VALUES (
-            #{email},
-            #{password},
-            #{name},
-            #{nickname},
-            #{role},
-            #{status},
-            NOW(),
-            NOW()
-        )
-    </insert>
-
     <update id="updateStatus">
         UPDATE user
         SET
         status = #{status},
+        updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateVehicleId">
+        UPDATE user
+        SET
+        vehicle_id = #{vehicleId},
         updated_at = NOW()
         WHERE user_id = #{userId}
     </update>

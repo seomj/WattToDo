@@ -116,9 +116,10 @@ public class RecordService {
         record.setUserId(request.getUserId());
         record.setStationId(request.getStationId());
 
-        // 2. 충전량 매핑
+        // 2. 충전량 및 충전기 정보 매핑
         record.setStartKwh(request.getStartKwh()); // 잔여량
         record.setTargetKwh(request.getTargetKwh()); // 목표량
+        record.setChargerCapacity(request.getChargerCapacity()); // 충전기 용량 (속도)
 
         // 3. 초기 상태 및 시간 설정
         record.setStartTime(LocalDateTime.now()); // 서버 시간 기록

@@ -8,6 +8,6 @@ public class VehicleUpdateReq {
     private Float efficiency;
     private Float batteryCapacity;
     private Float maxRange;
-    private String dcChargeType;
-    private String acChargeType;
+    private String fastChargeType;
+    private String slowChargeType;
 }

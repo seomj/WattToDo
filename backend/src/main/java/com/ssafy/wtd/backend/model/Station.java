@@ -13,6 +13,4 @@ public class Station {
     private Double lat;
     private Double lng;
 
-    private String city;
-    private String district;
 }

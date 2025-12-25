@@ -4,8 +4,8 @@
 <mapper namespace="com.ssafy.wtd.backend.repository.ChargeRecordRepository">
 
     <insert id="insertRecord" parameterType="com.ssafy.wtd.backend.model.ChargeRecord">
-        INSERT INTO charge_record (user_id, station_id, status, start_kwh, target_kwh, start_time)
-        VALUES (#{userId}, #{stationId}, #{status}, #{startKwh}, #{targetKwh}, #{startTime})
+        INSERT INTO charge_record (user_id, station_id, status, start_kwh, target_kwh, charger_capacity, start_time)
+        VALUES (#{userId}, #{stationId}, #{status}, #{startKwh}, #{targetKwh}, #{chargerCapacity}, #{startTime})
     </insert>
 
     <update id="updateRecord" parameterType="com.ssafy.wtd.backend.model.ChargeRecord">
@@ -15,13 +15,15 @@
     </update>
 
     <select id="selectActiveRecordByUserId" parameterType="java.lang.Long" resultType="com.ssafy.wtd.backend.model.ChargeRecord">
-        SELECT record_id AS recordId, user_id AS userId, station_id AS stationId, status, start_kwh AS startKwh, target_kwh AS targetKwh, charged_kwh AS chargedKwh, start_time AS startTime, end_time AS endTime, duration_min AS durationMin, charging_cost AS chargingCost
+        SELECT record_id AS recordId, user_id AS userId, station_id AS stationId, status, start_kwh AS startKwh, target_kwh AS targetKwh, 
+              charger_capacity AS chargerCapacity, charged_kwh AS chargedKwh, start_time AS startTime, end_time AS endTime, duration_min AS durationMin, charging_cost AS chargingCost
         FROM charge_record
         WHERE user_id = #{userId} AND status = 'CHARGING'
     </select>
 
     <select id="selectRecordById" parameterType="java.lang.Long" resultType="com.ssafy.wtd.backend.model.ChargeRecord">
-        SELECT record_id AS recordId, user_id AS userId, station_id AS stationId, status, start_kwh AS startKwh, target_kwh AS targetKwh, charged_kwh AS chargedKwh, start_time AS startTime, end_time AS endTime, duration_min AS durationMin, charging_cost AS chargingCost
+        SELECT record_id AS recordId, user_id AS userId, station_id AS stationId, status, start_kwh AS startKwh, target_kwh AS targetKwh, 
+               charger_capacity AS chargerCapacity, charged_kwh AS chargedKwh, start_time AS startTime, end_time AS endTime, duration_min AS durationMin, charging_cost AS chargingCost
         FROM charge_record
         WHERE record_id = #{recordId}
     </select>

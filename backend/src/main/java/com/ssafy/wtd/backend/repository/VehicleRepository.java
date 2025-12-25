@@ -18,5 +18,5 @@ public interface VehicleRepository {
 
     int updateByUserId(Vehicle vehicle);
 
-    int deleteByUserId(@Param("userId") Long userId);
+    int deleteByUserId(@Param("vehicleId") Long vehicleId);
 }

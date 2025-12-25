@@ -11,7 +11,7 @@ public interface UserRepository {
 
     User findByEmail(@Param("email") String email);
 
-    int updateMyInfo(@Param("userId") Long userId, @Param("email") String email, @Param("name") String name, @Param("nickname") String nickname);
+    int updateMyInfo(@Param("userId") Long userId, @Param("email") String email, @Param("name") String name);
 
     int updatePassword(@Param("userId") Long userId, @Param("password") String password);
 
@@ -20,4 +20,6 @@ public interface UserRepository {
     int disableUser(@Param("userId") Long userId);
 
     int updateStatus(@Param("userId") Long userId, @Param("status") String status);
+
+    int updateVehicleId(@Param("userId") Long userId, @Param("vehicleId") Long vehicleId);
 }

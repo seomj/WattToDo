@@ -51,7 +51,6 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setStatus("ACTIVE");
         user.setRole("USER");
-        user.setNickname(request.getName());
 
         // 3. 저장
         userRepository.insert(user);

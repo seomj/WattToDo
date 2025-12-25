@@ -1,7 +1,6 @@
 package com.ssafy.wtd.backend.service;
 
 import com.ssafy.wtd.backend.dto.user.MyInfoRes;
-import com.ssafy.wtd.backend.dto.user.MyInfoRes;
 import com.ssafy.wtd.backend.dto.user.MyInfoUpdateReq;
 import com.ssafy.wtd.backend.model.User;
 import com.ssafy.wtd.backend.repository.RefreshTokenRepository;
@@ -26,15 +25,13 @@ public class MyInfoService {
         if (user == null) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "유효하지 않은 사용자입니다."
-            );
+                    "유효하지 않은 사용자입니다.");
         }
 
         if ("DISABLED".equalsIgnoreCase(user.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "비활성화된 사용자입니다."
-            );
+                    "비활성화된 사용자입니다.");
         }
 
         Float totalCarbonSavedReq = carbonRepository.getTotalCarbonSavedByUserId(userId);
@@ -49,8 +46,7 @@ public class MyInfoService {
         if (user == null || "DISABLED".equalsIgnoreCase(user.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "비활성화된 사용자입니다."
-            );
+                    "비활성화된 사용자입니다.");
         }
 
         // 1. Email 중복 체크 (이메일이 변경된 경우)
@@ -59,8 +55,7 @@ public class MyInfoService {
             if (existing != null) {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT,
-                        "이미 사용 중인 이메일입니다."
-                );
+                        "이미 사용 중인 이메일입니다.");
             }
         }
 
@@ -71,25 +66,22 @@ public class MyInfoService {
 
         String updatedEmail = req.getEmail() != null ? req.getEmail() : user.getEmail();
         String updatedName = req.getName() != null ? req.getName() : user.getName();
-        String updatedNickname = req.getNickname() != null ? req.getNickname() : user.getNickname();
 
         int updatedCount = userRepository.updateMyInfo(
                 userId,
                 updatedEmail,
-                updatedName,
-                updatedNickname
-        );
+                updatedName);
 
         if (updatedCount == 0) {
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
-                    "사용자 정보 수정에 실패했습니다."
-            );
+                    "사용자 정보 수정에 실패했습니다.");
         }
 
-        // Fetch the latest full info after update to ensure all fields (createdAt, role, etc.) are intact
+        // Fetch the latest full info after update to ensure all fields (createdAt,
+        // role, etc.) are intact
         User updatedUser = userRepository.findByUserId(userId);
-        
+
         Float totalCarbonSavedReq = carbonRepository.getTotalCarbonSavedByUserId(userId);
         float totalCarbonSaved = (totalCarbonSavedReq != null) ? totalCarbonSavedReq : 0.0f;
 
@@ -102,8 +94,7 @@ public class MyInfoService {
         if (user == null || "DISABLED".equalsIgnoreCase(user.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "비활성화된 사용자입니다."
-            );
+                    "비활성화된 사용자입니다.");
         }
 
         userRepository.disableUser(userId);
@@ -114,8 +105,8 @@ public class MyInfoService {
 
     public boolean verifyPassword(Long userId, String plainPassword) {
         User user = userRepository.findByUserId(userId);
-        if (user == null) return false;
+        if (user == null)
+            return false;
         return passwordEncoder.matches(plainPassword, user.getPassword());
     }
 }
-

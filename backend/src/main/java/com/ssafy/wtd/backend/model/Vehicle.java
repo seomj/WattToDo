@@ -10,14 +10,13 @@ import java.time.LocalDateTime;
 @Builder
 public class Vehicle {
     private Long vehicleId;
-    private Long userId;
 
     private String model;
     private Float efficiency;
     private Float batteryCapacity;
     private Float maxRange;
-    private String dcChargeType;
-    private String acChargeType;
+    private String fastChargeType; // Renamed from dcChargeType
+    private String slowChargeType; // Renamed from acChargeType
 
     private LocalDateTime createdAt;
 }
